@@ -1,0 +1,28 @@
+Parts List
+----------
+
+MPU
+https://www.sparkfun.com/products/11520
+break resistor divider on battery to save power
+35
+
+GPS
+https://www.adafruit.com/products/746
+40
+
+Bluetooth
+https://www.adafruit.com/products/1697
+20
+
+Battery
+https://www.adafruit.com/products/1317
+Maybe larger capacity?
+6
+
+Display
+Nokia 5110
+10
+
+Total
+111
+
