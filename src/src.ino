@@ -13,6 +13,9 @@
 #define LCD_X     84
 #define LCD_Y     48
 
+#define GPSSerial Serial1
+#define USBSerial Serial
+
 #define GPSECHO  true
 
 static const byte ASCII[][5] =
@@ -115,8 +118,7 @@ static const byte ASCII[][5] =
 ,{0x78, 0x46, 0x41, 0x46, 0x78} // 7f →
 };
 
-Adafruit_GPS GPS(&Serial1);
-HardwareSerial mySerial = Serial1;
+Adafruit_GPS GPS(&GPSSerial);
 
 void lcd_write_char(char character)
 {
@@ -136,11 +138,19 @@ void lcd_clear_display(void)
   }
 }
 
+void lcd_clear_row(int y)
+{
+  int i ;
+  lcd_pos(0, y) ;
+  for (i = 0 ; i < LCD_X ; i++) {
+    lcd_write_cmd(LCD_D, 0x00) ;
+  }
+}
+
 void lcd_pos(int x, int y)
 {
   lcd_write_cmd( 0, 0x80 | x);  // Column.
   lcd_write_cmd( 0, 0x40 | y);  // Row.  
-
 }
 
 void lcd_init(void)
@@ -182,69 +192,105 @@ void setup(void)
   lcd_clear_display();
   lcd_write_str("Niggers!");
   
-  Serial.begin(115200);
+  USBSerial.begin(115200);
   delay(1000);
 
-  // 9600 NMEA is the default baud rate for Adafruit MTK GPS's- some use 4800
   GPS.begin(9600);
   
-  // uncomment this line to turn on RMC (recommended minimum) and GGA (fix data) including altitude
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-  
-  // Set the update rate
   GPS.sendCommand(PMTK_SET_NMEA_UPDATE_100_MILLIHERTZ) ;
-  //GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);   // 1 Hz update rate
-
-  // Request updates on antenna status, comment out to keep quiet
   GPS.sendCommand(PGCMD_ANTENNA);
 
   delay(1000);
-  mySerial.println(PMTK_Q_RELEASE);
-}
+  GPSSerial.println(PMTK_Q_RELEASE);
+  lcd_clear_display() ;
 
-uint32_t timer = millis();
-float dist = 0.0 ;
+}
 
 void loop(void)
 {
   char c = GPS.read();
-  // if you want to debug, this is a good time to do it!
-  if ((c) && (GPSECHO))
-    Serial.write(c); 
-  
-  // if a sentence is received, we can check the checksum, parse it...
-  if (GPS.newNMEAreceived()) {
-    // a tricky thing here is if we print the NMEA sentence, or data
-    // we end up not listening and catching other sentences! 
-    // so be very wary if using OUTPUT_ALLDATA and trytng to print out data
-    //Serial.println(GPS.lastNMEA());   // this also sets the newNMEAreceived() flag to false
-  
-    if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
-      return;  // we can fail to parse a sentence in which case we should just wait for another
+
+  if ((c) && (GPSECHO)) {
+    USBSerial.write(c); 
   }
+  
+  if (GPS.newNMEAreceived()) {
 
-  // if millis() or timer wraps around, we'll just reset it
-  if (timer > millis())  timer = millis();
+    if (GPS.parse(GPS.lastNMEA()) && GPS.fix) {
+       print_GPS_results() ;
+    }
 
-  // approximately every 2 seconds or so, print out the current stats
-  if (millis() - timer > 1000) { 
-    timer = millis(); // reset the timer
-    
-    char buf [6] ;
-    float speed = GPS.speed / 1.15076 ;
-    dist = (speed/3600.0)*10.0*5280 + dist;
-    lcd_clear_display();
-    
-    lcd_pos(0,0) ;
-    dtostrf(speed, 1, 2, buf) ;
-    lcd_write_str("Speed:") ;
-    lcd_write_str(buf) ;
-    
-    lcd_pos(0,1) ;
-    lcd_write_str("Dist:") ;
-    dtostrf(dist, 1, 2, buf) ;
-    lcd_write_str(buf) ;
-    
   }
 }
 
+#define M_TO_FT 3.28084
+void print_GPS_results(void)
+{
+  static double dist_speed = 0.0 ;
+  static double dist_coord = 0.0 ;
+  static double last_lat ;
+  static double last_lng ;
+  static int first = 1 ;
+
+  double speed = GPS.speed / 1.15076 ;
+
+  if (first) {
+    first = !first ;
+  } else {
+    dist_speed += (speed/3600.0)*10.0*5280 ;
+    dist_coord += calc_dist_coord(GPS.latitude, GPS.longitude,
+                                    last_lat, last_lng)*M_TO_FT ;
+  }
+
+  last_lat = GPS.latitude ;
+  last_lng = GPS.longitude ;
+  
+  lcd_print_float(dist_speed) ;
+  lcd_print_float(dist_coord) ;
+  lcd_print_float(GPS.latitude) ;
+  lcd_print_float(GPS.longitude) ;
+}
+
+void lcd_print_float(double d)
+{
+  static int row = 1 ;
+  static char buf[12] ;
+  lcd_clear_row(row) ;
+  lcd_pos(0, row) ;
+  dtostrf(d, 1, 7, buf) ;
+  lcd_write_str(buf) ;
+  row = row == 4 ? 1 : row + 1 ;
+}
+
+#define MEAN_EARTH_RADIUS 6371e3
+double calc_dist_coord(double lat_a, double lng_a, double lat_b, double lng_b)
+{
+  double a, c, del_lat, del_lng ;
+  double lat_a_radians = GPPGA_to_radians(lat_a) ;
+  double lng_a_radians = GPPGA_to_radians(lng_a) ;
+  double lat_b_radians = GPPGA_to_radians(lat_b) ;
+  double lng_b_radians = GPPGA_to_radians(lng_b) ;
+
+  /* use haversine formula */
+  del_lat = fabs(lat_a_radians - lat_b_radians) ;
+  del_lng = fabs(lng_a_radians - lng_b_radians) ;
+
+  a = 2*asin(sqrt(square(sin(del_lat/2))
+        + cos(lat_a)*cos(lat_b)*square(sin(del_lng/2)))) ;
+
+  /* alternative form */
+  /*
+  a = square(sin(del_lat/2)) + cos(lat_a)*cos(lat_b)*square(sin(del_lng/2)) ;
+  c = 2.0*atan2(sqrt(a), sqrt(1.0 - a)) ;
+  */
+
+  return a*MEAN_EARTH_RADIUS ;
+}
+
+double GPPGA_to_radians(double degrees)
+{
+  double integral, fractional ;
+  fractional = modf(degrees/100.0, &integral) ;
+  return (integral + fractional*100.0/60.0)*2*M_PI/360.0 ;
+}
