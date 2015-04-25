@@ -1,0 +1,8 @@
+- Use command line tools instead of IDE 
+sudo apt-get install arduino-core
+sudo apt-get install arduino-mk
+
+- Download Sparkfun Fio v3 files from
+https://github.com/sparkfun/SF32u4_boards/archive/master.zip
+and put in
+/usr/share/arduino/hardware
