@@ -218,43 +218,30 @@ void loop(void)
   if (GPS.newNMEAreceived()) {
 
     if (GPS.parse(GPS.lastNMEA()) && GPS.fix) {
-       print_GPS_results() ;
+      print_distance_1km() ;
     }
 
   }
 }
 
-#define M_TO_FT 3.28084
-void print_GPS_results(void)
+#define LAT_1KM  44.893158
+#define LNG_1KM -68.6634645
+void print_distance_1km(void)
 {
-  static double dist_speed = 0.0 ;
-  static double dist_coord = 0.0 ;
-  static double last_lat ;
-  static double last_lng ;
-  static int first = 1 ;
+  static const double lat_1km = degrees_to_radians(LAT_1KM) ;
+  static const double lng_1km = degrees_to_radians(LNG_1KM) ;
 
-  double speed = GPS.speed / 1.15076 ;
+  double gps_lat = degrees_to_radians(GPS.latitudeDegrees) ;
+  double gps_lng = degrees_to_radians(GPS.longitudeDegrees) ;
 
-  if (first) {
-    first = !first ;
-  } else {
-    dist_speed += (speed/3600.0)*10.0*5280 ;
-    dist_coord += calc_dist_coord(GPS.latitude, GPS.longitude,
-                                    last_lat, last_lng)*M_TO_FT ;
-  }
-
-  last_lat = GPS.latitude ;
-  last_lng = GPS.longitude ;
-  
-  lcd_print_float(dist_speed) ;
-  lcd_print_float(dist_coord) ;
-  lcd_print_float(GPS.latitude) ;
-  lcd_print_float(GPS.longitude) ;
+  double distance = calc_dist_coord(gps_lat, gps_lng, 
+                                    lat_1km, lng_1km) ;
+  lcd_print_float(distance/1e3) ;
 }
 
 void lcd_print_float(double d)
 {
-  static int row = 1 ;
+  static int row = 0 ;
   static char buf[12] ;
   lcd_clear_row(row) ;
   lcd_pos(0, row) ;
@@ -264,33 +251,31 @@ void lcd_print_float(double d)
 }
 
 #define MEAN_EARTH_RADIUS 6371e3
+/* all arguments must be in radians */
 double calc_dist_coord(double lat_a, double lng_a, double lat_b, double lng_b)
 {
-  double a, c, del_lat, del_lng ;
-  double lat_a_radians = GPPGA_to_radians(lat_a) ;
-  double lng_a_radians = GPPGA_to_radians(lng_a) ;
-  double lat_b_radians = GPPGA_to_radians(lat_b) ;
-  double lng_b_radians = GPPGA_to_radians(lng_b) ;
+  double del_lat, del_lng, a ;
 
   /* use haversine formula */
-  del_lat = fabs(lat_a_radians - lat_b_radians) ;
-  del_lng = fabs(lng_a_radians - lng_b_radians) ;
+  del_lat = lat_a - lat_b ;
+  del_lng = lng_a - lng_b ;
 
   a = 2*asin(sqrt(square(sin(del_lat/2))
         + cos(lat_a)*cos(lat_b)*square(sin(del_lng/2)))) ;
 
-  /* alternative form */
-  /*
-  a = square(sin(del_lat/2)) + cos(lat_a)*cos(lat_b)*square(sin(del_lng/2)) ;
-  c = 2.0*atan2(sqrt(a), sqrt(1.0 - a)) ;
-  */
-
   return a*MEAN_EARTH_RADIUS ;
 }
 
-double GPPGA_to_radians(double degrees)
+#if 0
+double GPPGA_to_degrees(double gppga)
 {
   double integral, fractional ;
-  fractional = modf(degrees/100.0, &integral) ;
-  return (integral + fractional*100.0/60.0)*2*M_PI/360.0 ;
+  fractional = modf(gppga/100.0, &integral) ;
+  return integral + fractional*100.0/60.0 ;
+}
+#endif
+
+double degrees_to_radians(double degrees)
+{
+  return degrees*2.0*M_PI/360.0 ;
 }
