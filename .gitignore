@@ -1,3 +1,5 @@
+open.sh
+
 # Object files
 *.o
 *.ko
