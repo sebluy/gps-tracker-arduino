@@ -39,34 +39,25 @@ void send(void)
   Serial.println("Connected");
 
   /* dump payload */
-  bluetooth.println("start");
+  bluetooth.print("start");
   send_point("43.7", "-70.6", "1.5");
   send_point("43.6", "-70.6", "1.4");
   send_point("43.6", "-70.5", "1.3");
   send_point("43.7", "-70.5", "1.2");
   send_point("43.7", "-70.6", "1.1");
-  bluetooth.println("finish");
+  bluetooth.print("finish");
   Serial.println("Done");
 }
 
-/* for some reason without print_status between each call,
- * bluetooth.print bugs out. Maybe the call to pollACI fixes */
+/* for some reason without pollACI between each call,
+ * bluetooth.print bugs out after ~25 chars. */
 void send_point(String latitude, String longitude, String speed)
 {
   bluetooth.print(latitude);
-  print_status();
-  bluetooth.print(longitude);
-  print_status();
-  bluetooth.print(speed);
-  print_status();
-  delay(1000);
-}
-
-void print_status(void)
-{
   bluetooth.pollACI();
-  aci_evt_opcode_t status = bluetooth.getState();
-  Serial.println(status);
+  bluetooth.print(longitude);
+  bluetooth.pollACI();
+  bluetooth.print(speed);
+  bluetooth.pollACI();
 }
-
 
