@@ -8,6 +8,10 @@ extern "C" {
 #define GPSSerial Serial1
 #define USBSerial Serial
 
+#define BUT_STOP  3
+#define BUT_STAR  2
+#define BUT_BLUE  7
+
 #define GPSECHO  true
 #define MEAN_EARTH_RADIUS 6371e3
 #define M_TO_FT 3.28084
@@ -17,11 +21,18 @@ HardwareSerial mySerial = Serial1;
 
 void setup(void)
 {
+  pinMode(BUT_STOP, INPUT) ;
+  pinMode(BUT_STAR, INPUT) ;
+  pinMode(BUT_BLUE, INPUT) ;
+
+  attachInterrupt(1,isr_stop,HIGH) ;
+  attachInterrupt(0,isr_start,HIGH) ;
+  attachInterrupt(4,isr_bluetooth,HIGH);
+  
   lcd_init();
   lcd_clear_display();
   lcd_write_str("init");
-  delay(1000);
-  
+   
   USBSerial.begin(115200);
   delay(1000);
 
@@ -38,6 +49,7 @@ void setup(void)
 
 void loop(void)
 {
+  /*
   char c = GPS.read();
 
   if ((c) && (GPSECHO)) {
@@ -51,6 +63,7 @@ void loop(void)
     }
 
   }
+  */
 }
 
 void print_GPS_results(void)
@@ -81,4 +94,32 @@ void print_GPS_results(void)
   lcd_print_float(GPS.latitude) ;
   lcd_print_float(GPS.longitude) ;
 }
+
+void isr_start(void)
+{
+  lcd_pos(0,0) ;
+  lcd_write_str("start") ;
+  delay(3000);              // wait for a second
+  lcd_clear_display() ;
+}
+
+void isr_stop(void)
+{
+  lcd_pos(0,0) ;
+  lcd_write_str("stop") ;
+  delay(3000);              // wait for a second
+  lcd_clear_display() ;
+}
+
+void isr_bluetooth(void)
+{
+  lcd_pos(0,0) ;
+  lcd_write_str("bluetooth") ;
+  delay(3000);
+  lcd_clear_display() ;
+}
+
+      
+      
+    
 

@@ -53,6 +53,13 @@ void lcd_init(void)
   lcd_write_cmd(LOW, 0x0C );  // LCD in normal mode.
 }
 
+/* 
+ * Writes string to the LCD 
+ *
+ * Writes a string to the LCD by individually
+ * issuing each character in the string
+ *
+ */
 void lcd_write_str(char *characters)
 {
   while (*characters)
@@ -61,21 +68,37 @@ void lcd_write_str(char *characters)
   }
 }
 
+/* 
+ * Issues a command to the LCD
+ *
+ * Commands are issued on the Nokia 5110 by writing the 
+ * relevant mode select (D/CBAR), pulling the chip-enable
+ * (SCE) low (active low), entering the command byte 
+ * (D7-D0), then bringing chip enable high again
+ * 
+ */
 void lcd_write_cmd(byte dc, byte data)
 {
-  digitalWrite(LCD_DC, dc);
-  digitalWrite(LCD_SCE, LOW);
+  digitalWrite(LCD_DC, dc);    /* Mode select */
+  digitalWrite(LCD_SCE, LOW);  /* Chip enable active low */
+  
+  /* Write command/address/data byte */
   shiftOut(LCD_MOSI, LCD_SCLK, MSBFIRST, data);
-  digitalWrite(LCD_SCE, HIGH);
+  
+  digitalWrite(LCD_SCE, HIGH);  /* Chip enable high */
 }
 
+/* 
+ * Prints a floating point number to the LCD
+ *
+ */
 void lcd_print_float(double d)
 {
   static int row = 1 ;
   static char buf[12] ;
   lcd_clear_row(row) ;
   lcd_pos(0, row) ;
-  dtostrf(d, 1, 7, buf) ;
+  dtostrf(d, 1, 3, buf) ;
   lcd_write_str(buf) ;
   row = row == 4 ? 1 : row + 1 ;
 }
