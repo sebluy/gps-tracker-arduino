@@ -1,3 +1,6 @@
+# startup script
+open.sh
+
 # Object files
 *.o
 *.ko
