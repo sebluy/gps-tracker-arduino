@@ -8,9 +8,6 @@ extern "C" {
 #define GPSSerial Serial1
 #define USBSerial Serial
 
-#define BUT_STAR  3
-#define BUT_BLUE  7
-
 #define GPSECHO  true
 #define MEAN_EARTH_RADIUS 6371e3
 #define M_TO_FT 3.28084
@@ -18,59 +15,50 @@ extern "C" {
 Adafruit_GPS GPS(&GPSSerial);
 HardwareSerial mySerial = Serial1;
 
-volatile int coutner1 = 0;
-volatile int coutner2 = 0;
+volatile int tracking_en = 0 ; 
+volatile int bluetooth_busy = 0 ;
 
 void setup(void)
 {
-  pinMode(BUT_STAR, INPUT) ;
-  pinMode(BUT_BLUE, INPUT) ;
-  
-  attachInterrupt(1, isr_blank, HIGH) ;
+  attachInterrupt(1, isr_stop, HIGH) ;
   attachInterrupt(0,isr_start,HIGH) ;
   attachInterrupt(4,isr_bluetooth,HIGH);
 
-  /* lcd_init();
-   lcd_clear_display();
-   lcd_write_str("init");
+  lcd_init();
+  lcd_clear_display();
+  lcd_write_str("Cache Rules Everything Around Me");
 
-   USBSerial.begin(115200);
-   delay(1000);
+  USBSerial.begin(115200);
+  delay(1000);
 
-   GPS.begin(9600);
+  GPS.begin(9600);
 
-   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-   GPS.sendCommand(PMTK_SET_NMEA_UPDATE_100_MILLIHERTZ) ;
-   GPS.sendCommand(PGCMD_ANTENNA);
+  GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_100_MILLIHERTZ) ;
+  GPS.sendCommand(PGCMD_ANTENNA);
 
-   delay(1000);
-   GPSSerial.println(PMTK_Q_RELEASE);
-   lcd_clear_display() ; */
+  delay(1000);
+  GPSSerial.println(PMTK_Q_RELEASE);
+  lcd_clear_display() ; 
 }
 
 void loop(void)
 {
-  delay(1000) ;
-  Serial.print(coutner1) ;
-  Serial.write(":") ;
-  Serial.print(coutner2) ;
-  Serial.write("\n") ;
-  delay(1000);
-  /*
-  char c = GPS.read();
+  if (tracking_en) {
+    char c = GPS.read();
 
-  if ((c) && (GPSECHO)) {
-    USBSerial.write(c);
-  }
-
-  if (GPS.newNMEAreceived()) {
-
-    if (GPS.parse(GPS.lastNMEA()) && GPS.fix) {
-       print_GPS_results() ;
+    if ((c) && (GPSECHO)) {
+      USBSerial.write(c);
     }
 
+    if (GPS.newNMEAreceived()) {
+
+      if (GPS.parse(GPS.lastNMEA()) && GPS.fix) {
+         print_GPS_results() ;
+      }
+    }
   }
-  */
+  delay(1500) ;
 }
 
 void print_GPS_results(void)
@@ -105,35 +93,50 @@ void print_GPS_results(void)
 void isr_start(void)
 {
   if (debounce(3) ) {
-    detachInterrupt(1) ;
+    detachInterrupt(0) ;
     noInterrupts() ;
-    coutner1++ ;
-    interrupts() ;
+    if ( tracking_en == 0 ) {
+      tracking_en = 1 ;
+      lcd_clear_display() ;
+      lcd_pos(0,0) ;
+      lcd_write_str("Tracking mode enabled") ;
+    }
     attachInterrupt(0, isr_start, HIGH) ;
+    interrupts() ;  
   }
 }
 
 void isr_bluetooth(void)
 {
   if ( debounce(7) ) {
-    detachInterrupt(1) ;
+    detachInterrupt(4) ;
     noInterrupts() ;
-    coutner2++ ;
-    interrupts() ;
+    
     attachInterrupt(4, isr_bluetooth, HIGH) ;
+    interrupts() ;
   }
 }
 
-void isr_blank(void)
+void isr_stop(void)
 {
-  // this function does nothing but it makes shit work 
-  return ;
+  if ( debounce(2) ) {
+    detachInterrupt(1) ;
+    noInterrupts() ;
+    if ( tracking_en == 1) {
+      tracking_en = 0 ;
+      lcd_clear_display() ;
+      lcd_pos(0,0) ;
+      lcd_write_str("Tracking mode disabled") ;
+    }
+    attachInterrupt(1, isr_stop, HIGH) ;
+    interrupts() ;
+  }
 }
 
 bool debounce(int pin) 
 {
   bool safe = 1 ;
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 100; i++) {
      if (digitalRead(pin) != HIGH ) {
        safe = 0 ;
        return safe ;
