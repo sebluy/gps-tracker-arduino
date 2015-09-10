@@ -16,7 +16,7 @@ Adafruit_GPS GPS(&GPSSerial);
 HardwareSerial mySerial = Serial1;
 
 volatile int tracking_en = 0 ; 
-volatile int bluetooth_busy = 0 ;
+volatile int bluetooth_en = 0 ;
 
 void setup(void)
 {
@@ -44,6 +44,7 @@ void setup(void)
 
 void loop(void)
 {
+  
   if (tracking_en) {
     char c = GPS.read();
 
@@ -58,7 +59,12 @@ void loop(void)
       }
     }
   }
-  delay(1500) ;
+  
+  //Serial.print(tracking_en) ;
+  //Serial.write(":") ;
+  //Serial.print(bluetooth_en) ;
+  //Serial.write("\n") ;
+  //delay(1500) ;
 }
 
 void print_GPS_results(void)
@@ -97,6 +103,7 @@ void isr_start(void)
     noInterrupts() ;
     if ( tracking_en == 0 ) {
       tracking_en = 1 ;
+      bluetooth_en = 0 ;
       lcd_clear_display() ;
       lcd_pos(0,0) ;
       lcd_write_str("Tracking mode enabled") ;
@@ -111,7 +118,11 @@ void isr_bluetooth(void)
   if ( debounce(7) ) {
     detachInterrupt(4) ;
     noInterrupts() ;
-    
+    tracking_en = 0 ;
+    bluetooth_en = 1;
+    lcd_clear_display() ;
+    lcd_pos(0,0) ;
+    lcd_write_str("Bluetooth") ;
     attachInterrupt(4, isr_bluetooth, HIGH) ;
     interrupts() ;
   }
@@ -122,12 +133,19 @@ void isr_stop(void)
   if ( debounce(2) ) {
     detachInterrupt(1) ;
     noInterrupts() ;
+    
     if ( tracking_en == 1) {
       tracking_en = 0 ;
       lcd_clear_display() ;
       lcd_pos(0,0) ;
       lcd_write_str("Tracking mode disabled") ;
+    } else if ( bluetooth_en == 1) {
+      bluetooth_en = 0 ;
+      lcd_clear_display() ;
+      lcd_pos(0,0) ;
+      lcd_write_str("Bluetooth stopped by user") ;
     }
+    
     attachInterrupt(1, isr_stop, HIGH) ;
     interrupts() ;
   }
@@ -135,14 +153,14 @@ void isr_stop(void)
 
 bool debounce(int pin) 
 {
-  bool safe = 1 ;
+  bool flag = 1 ;
   for (int i = 0; i < 100; i++) {
      if (digitalRead(pin) != HIGH ) {
-       safe = 0 ;
-       return safe ;
+       flag = 0 ;
+       return flag ;
      }
   }
-  return safe ;
+  return flag ;
 }
 
 
