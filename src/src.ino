@@ -1,5 +1,10 @@
 #include <SoftwareSerial.h>
 #include <Adafruit_GPS.h>
+#include "bluetooth.h"
+/* have to add this here because arduino is gay */
+#include "Adafruit_BLE_UART.h"
+#include <SPI.h>
+
 extern "C" {
 #include "lcd.h"
 #include "haversine.h"
@@ -13,6 +18,7 @@ extern "C" {
 #define M_TO_FT 3.28084
 
 Adafruit_GPS GPS(&GPSSerial);
+
 HardwareSerial mySerial = Serial1;
 
 volatile int tracking_en = 0 ; 
@@ -59,7 +65,12 @@ void loop(void)
       }
     }
   }
-  
+
+  if (bluetooth_en) {
+    bluetooth_send();
+    bluetooth_en = 0;
+  }
+
   //Serial.print(tracking_en) ;
   //Serial.write(":") ;
   //Serial.print(bluetooth_en) ;

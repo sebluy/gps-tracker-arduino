@@ -1,9 +1,15 @@
 #include "Arduino.h"
-#include "bluetooth.h"
-#include <SPI.h>
 #include "Adafruit_BLE_UART.h"
 
-void send(void)
+#define REQ 9
+#define RDY 7
+#define RST 10
+
+Adafruit_BLE_UART bluetooth = Adafruit_BLE_UART(REQ, RDY, RST);
+
+static void send_point(String latitude, String longitude, String speed);
+
+void bluetooth_send(void)
 {
   Serial.println("Waiting");
   bluetooth.begin();
@@ -30,7 +36,7 @@ void send(void)
 
 /* for some reason without pollACI between each call,
  * bluetooth.print bugs out after ~25 chars. */
-void send_point(String latitude, String longitude, String speed)
+static void send_point(String latitude, String longitude, String speed)
 {
   bluetooth.print(latitude);
   bluetooth.pollACI();
