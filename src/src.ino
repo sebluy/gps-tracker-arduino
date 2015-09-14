@@ -5,16 +5,29 @@
 #define RDY 7
 #define RST 10
 
+#define BLUETOOTH_INTERRUPT 1 /* pin 2 (D2)*/
+
+int bluetooth_button_pressed = 0;
+
 Adafruit_BLE_UART bluetooth = Adafruit_BLE_UART(REQ, RDY, RST);
 
 void setup(void)
 {
+  attachInterrupt(BLUETOOTH_INTERRUPT, isr_bluetooth, HIGH);
   bluetooth.setDeviceName("Ralph");
 }
 
 void loop(void)
 {
-  send();
+  if (bluetooth_button_pressed) {
+    send();
+    bluetooth_button_pressed = 0;
+  }
+}
+
+void isr_bluetooth(void)
+{
+  bluetooth_button_pressed = 1;
 }
 
 void send(void)
