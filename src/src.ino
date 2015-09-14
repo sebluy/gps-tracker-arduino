@@ -9,24 +9,16 @@ Adafruit_BLE_UART bluetooth = Adafruit_BLE_UART(REQ, RDY, RST);
 
 void setup(void)
 {
-  Serial.begin(9600);
-  while (!Serial);
   bluetooth.setDeviceName("Ralph");
 }
 
 void loop(void)
 {
-  if (Serial.available()) {
-    String s = Serial.readString();
-    if (s == "Send") {
-      send();
-    }
-  }
+  send();
 }
 
 void send(void)
 {
-  Serial.println("Waiting");
   bluetooth.begin();
 
   aci_evt_opcode_t status = ACI_EVT_DISCONNECTED;
@@ -36,7 +28,6 @@ void send(void)
     bluetooth.pollACI();
     status = bluetooth.getState();
   }
-  Serial.println("Connected");
 
   /* dump payload */
   bluetooth.print("start");
@@ -60,4 +51,5 @@ void send_point(String latitude, String longitude, String speed)
   bluetooth.print(speed);
   bluetooth.pollACI();
 }
+
 
