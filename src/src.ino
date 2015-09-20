@@ -1,3 +1,4 @@
+#include <SPI.h>
 #include <SoftwareSerial.h>
 #include <Adafruit_GPS.h>
 extern "C" {
@@ -44,6 +45,22 @@ void setup(void)
 
 void loop(void)
 {
+  lcd_clear_display() ;
+  lcd_write_str("Dist:") ;
+  delay(2500) ;
+  
+  lcd_pos(1,1) ;
+  lcd_print_float(6.03) ;
+  delay(2500) ;
+  
+  lcd_pos(1,2) ;
+  lcd_write_str("Speed:") ;
+  delay(2500) ;
+  
+  lcd_pos(1,3) ;
+  lcd_print_float(1.001) ;
+  delay(2500) ;
+  
   
   if (tracking_en) {
     char c = GPS.read();
@@ -90,10 +107,24 @@ void print_GPS_results(void)
   last_lat = GPS.latitude ;
   last_lng = GPS.longitude ;
 
+  lcd_clear_display() ;
+  lcd_write_str("Dist:") ;
+  delay(200) ;
+  
+  lcd_pos(0,1) ;
   lcd_print_float(dist_coord) ;
+  delay(200) ;
+  
+  lcd_pos(0,3) ;
+  lcd_write_str("Speed:") ;
+  delay(200) ;
+  
+  lcd_pos(0,4) ;
   lcd_print_float(speed) ;
-  lcd_print_float(GPS.latitude) ;
-  lcd_print_float(GPS.longitude) ;
+  delay(200) ;
+  
+  //lcd_print_float(GPS.latitude) ;
+  //lcd_print_float(GPS.longitude) ;
 }
 
 void isr_start(void)

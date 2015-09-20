@@ -15,7 +15,7 @@ extern "C" {
 #define LCD_Y     48
 
 /* PROGMEM puts data in flash (in order to conserve memory) */
-static const byte ASCII[][5] PROGMEM =
+static const byte ASCII[][5] =
 {
 {0x00, 0x00, 0x00, 0x00, 0x00} // 20  
 ,{0x00, 0x00, 0x5f, 0x00, 0x00} // 21 !

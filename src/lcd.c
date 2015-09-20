@@ -15,10 +15,11 @@ void lcd_write_char(char character)
 void lcd_clear_display(void)
 {
   int i ;
-  for (i = 0; i < LCD_X * LCD_Y / 8; i++)
+  for (i = 0; i < LCD_Y; i++) 
   {
-    lcd_write_cmd(HIGH, 0x00);
+    lcd_clear_row(i) ;
   }
+  lcd_pos(0,0) ;
 }
 
 void lcd_clear_row(int y)
@@ -94,11 +95,7 @@ void lcd_write_cmd(byte dc, byte data)
  */
 void lcd_print_float(double d)
 {
-  static int row = 1 ;
-  static char buf[12] ;
-  lcd_clear_row(row) ;
-  lcd_pos(0, row) ;
+  static char buf[13] ;
   dtostrf(d, 1, 3, buf) ;
   lcd_write_str(buf) ;
-  row = row == 4 ? 1 : row + 1 ;
 }
