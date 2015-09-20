@@ -1,6 +1,7 @@
 #include "SPI.h"
 #include "Arduino.h"
 #include "lcd.h"
+#include "avr/pgmspace.h"
 
 void lcd_write_char(char character)
 {
@@ -8,7 +9,7 @@ void lcd_write_char(char character)
   lcd_write_cmd(HIGH, 0x00);
   for (i = 0; i < 5; i++)
   {
-    lcd_write_cmd(HIGH, ASCII[character - 0x20][i]);
+    lcd_write_cmd(HIGH, pgm_read_byte(&(ASCII[character - 0x20][i])));
   }
   lcd_write_cmd(HIGH, 0x00);
 }
