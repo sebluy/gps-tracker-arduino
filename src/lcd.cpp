@@ -1,3 +1,4 @@
+#include "SPI.h"
 #include "Arduino.h"
 #include "lcd.h"
 
@@ -39,6 +40,9 @@ void lcd_pos(int x, int y)
 
 void lcd_init(void)
 {
+  SPI.begin();
+  SPI.setBitOrder(MSBFIRST) ;
+  
   pinMode(LCD_SCE, OUTPUT);
   pinMode(LCD_RST, OUTPUT);
   pinMode(LCD_DC, OUTPUT);
@@ -84,7 +88,8 @@ void lcd_write_cmd(byte dc, byte data)
   digitalWrite(LCD_SCE, LOW);  /* Chip enable active low */
   
   /* Write command/address/data byte */
-  shiftOut(LCD_MOSI, LCD_SCLK, MSBFIRST, data);
+  //shiftOut(LCD_MOSI, LCD_SCLK, MSBFIRST, data);
+  SPI.transfer(data) ;
   
   digitalWrite(LCD_SCE, HIGH);  /* Chip enable high */
 }

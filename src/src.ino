@@ -1,8 +1,8 @@
 #include <SPI.h>
 #include <SoftwareSerial.h>
 #include <Adafruit_GPS.h>
-extern "C" {
 #include "lcd.h"
+extern "C" {
 #include "haversine.h"
 }
 
