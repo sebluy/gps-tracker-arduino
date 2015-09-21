@@ -41,8 +41,8 @@ void lcd_pos(int x, int y)
 
 void lcd_init(void)
 {
-  SPI.begin();
-  SPI.setBitOrder(MSBFIRST) ;
+  //SPI.begin();
+  //SPI.setBitOrder(MSBFIRST) ;
   
   pinMode(LCD_SCE, OUTPUT);
   pinMode(LCD_RST, OUTPUT);
@@ -86,13 +86,15 @@ void lcd_write_str(char *characters)
 void lcd_write_cmd(byte dc, byte data)
 {
   digitalWrite(LCD_DC, dc);    /* Mode select */
-  digitalWrite(LCD_SCE, LOW);  /* Chip enable active low */
   
   /* Write command/address/data byte */
   //shiftOut(LCD_MOSI, LCD_SCLK, MSBFIRST, data);
+  SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
+  digitalWrite(LCD_SCE, LOW);  /* Chip enable active low */
   SPI.transfer(data) ;
-  
   digitalWrite(LCD_SCE, HIGH);  /* Chip enable high */
+  SPI.endTransaction();
+  
 }
 
 /* 

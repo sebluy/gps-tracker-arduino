@@ -5,11 +5,11 @@
 extern "C" {
 #endif
 
-#define LCD_SCE   18
-#define LCD_RST   19
-#define LCD_DC    20
-#define LCD_MOSI  16
-#define LCD_SCLK  15
+#define LCD_SCE   18 // A0
+#define LCD_RST   19 // A1
+#define LCD_DC    20 // A2
+#define LCD_MOSI  16 // MOSI
+#define LCD_SCLK  15 // SCLK
 
 #define LCD_X     84
 #define LCD_Y     48

@@ -1,197 +1,81 @@
 #include <SPI.h>
-#include <SoftwareSerial.h>
-#include <Adafruit_GPS.h>
+#include "Adafruit_BLE_UART.h"
 #include "lcd.h"
-extern "C" {
-#include "haversine.h"
-}
 
-#define GPSSerial Serial1
+#define REQ 9
+#define RDY 7
+#define RST 10
+
+#define BLUETOOTH_INTERRUPT 1 /* pin 2 (D2)*/
+
 #define USBSerial Serial
 
-#define GPSECHO  true
-#define MEAN_EARTH_RADIUS 6371e3
-#define M_TO_FT 3.28084
+int bluetooth_button_pressed = 0;
 
-Adafruit_GPS GPS(&GPSSerial);
-HardwareSerial mySerial = Serial1;
-
-volatile int tracking_en = 0 ; 
-volatile int bluetooth_en = 0 ;
+Adafruit_BLE_UART bluetooth = Adafruit_BLE_UART(REQ, RDY, RST);
 
 void setup(void)
 {
-  attachInterrupt(1, isr_stop, HIGH) ;
-  attachInterrupt(0,isr_start,HIGH) ;
-  attachInterrupt(4,isr_bluetooth,HIGH);
-
+  attachInterrupt(BLUETOOTH_INTERRUPT, on_bluetooth_interrupt, HIGH);
+  bluetooth.setDeviceName("Ralph");
   lcd_init();
   lcd_clear_display();
-  lcd_write_str("Cache Rules Everything Around Me");
-
-  USBSerial.begin(115200);
-  delay(1000);
-
-  GPS.begin(9600);
-
-  GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_100_MILLIHERTZ) ;
-  GPS.sendCommand(PGCMD_ANTENNA);
-
-  delay(1000);
-  GPSSerial.println(PMTK_Q_RELEASE);
-  lcd_clear_display() ; 
+  lcd_write_str("My name");
+  lcd_pos(0,1);
+  lcd_write_str("is Ralph");
 }
 
 void loop(void)
 {
-  lcd_clear_display() ;
-  lcd_write_str("Dist:") ;
-  delay(2500) ;
-  
-  lcd_pos(1,1) ;
-  lcd_print_float(6.03) ;
-  delay(2500) ;
-  
-  lcd_pos(1,2) ;
-  lcd_write_str("Speed:") ;
-  delay(2500) ;
-  
-  lcd_pos(1,3) ;
-  lcd_print_float(1.001) ;
-  delay(2500) ;
-  
-  
-  if (tracking_en) {
-    char c = GPS.read();
-
-    if ((c) && (GPSECHO)) {
-      USBSerial.write(c);
-    }
-
-    if (GPS.newNMEAreceived()) {
-
-      if (GPS.parse(GPS.lastNMEA()) && GPS.fix) {
-         print_GPS_results() ;
-      }
-    }
-  }
-  
-  //Serial.print(tracking_en) ;
-  //Serial.write(":") ;
-  //Serial.print(bluetooth_en) ;
-  //Serial.write("\n") ;
-  //delay(1500) ;
-}
-
-void print_GPS_results(void)
-{
-  static double dist_speed = 0.0 ;
-  static double dist_coord = 0.0 ;
-  static double last_lat ;
-  static double last_lng ;
-  static int first = 1 ;
-
-  double speed = GPS.speed / 1.15076 ;
-  double coord_diff = 0.0 ;
-  if (first) {
-    first = !first ;
-  } else {
-    dist_speed += (speed / 3600.0) * 10.0 * 5280 ;
-    coord_diff = calc_dist_coord(GPS.latitude, GPS.longitude,
-                                 last_lat, last_lng) * M_TO_FT ;
-    dist_coord +=  coord_diff ;
-    speed = (coord_diff * 360.0 ) / 5280.0 ;
-  }
-
-  last_lat = GPS.latitude ;
-  last_lng = GPS.longitude ;
-
-  lcd_clear_display() ;
-  lcd_write_str("Dist:") ;
-  delay(200) ;
-  
-  lcd_pos(0,1) ;
-  lcd_print_float(dist_coord) ;
-  delay(200) ;
-  
-  lcd_pos(0,3) ;
-  lcd_write_str("Speed:") ;
-  delay(200) ;
-  
-  lcd_pos(0,4) ;
-  lcd_print_float(speed) ;
-  delay(200) ;
-  
-  //lcd_print_float(GPS.latitude) ;
-  //lcd_print_float(GPS.longitude) ;
-}
-
-void isr_start(void)
-{
-  if (debounce(3) ) {
-    detachInterrupt(0) ;
-    noInterrupts() ;
-    if ( tracking_en == 0 ) {
-      tracking_en = 1 ;
-      bluetooth_en = 0 ;
-      lcd_clear_display() ;
-      lcd_pos(0,0) ;
-      lcd_write_str("Tracking mode enabled") ;
-    }
-    attachInterrupt(0, isr_start, HIGH) ;
-    interrupts() ;  
+  if (bluetooth_button_pressed) {
+    lcd_clear_display();
+    lcd_write_str("Advertising");
+    delay(1000);
+    send();
+    delay(5000);
+    lcd_pos(0,1);
+    lcd_write_str("Done");
+    bluetooth_button_pressed = 0;
   }
 }
 
-void isr_bluetooth(void)
+void on_bluetooth_interrupt(void)
 {
-  if ( debounce(7) ) {
-    detachInterrupt(4) ;
-    noInterrupts() ;
-    tracking_en = 0 ;
-    bluetooth_en = 1;
-    lcd_clear_display() ;
-    lcd_pos(0,0) ;
-    lcd_write_str("Bluetooth") ;
-    attachInterrupt(4, isr_bluetooth, HIGH) ;
-    interrupts() ;
-  }
+    bluetooth_button_pressed = 1;
 }
 
-void isr_stop(void)
+void send(void)
 {
-  if ( debounce(2) ) {
-    detachInterrupt(1) ;
-    noInterrupts() ;
-    
-    if ( tracking_en == 1) {
-      tracking_en = 0 ;
-      lcd_clear_display() ;
-      lcd_pos(0,0) ;
-      lcd_write_str("Tracking mode disabled") ;
-    } else if ( bluetooth_en == 1) {
-      bluetooth_en = 0 ;
-      lcd_clear_display() ;
-      lcd_pos(0,0) ;
-      lcd_write_str("Bluetooth stopped by user") ;
-    }
-    
-    attachInterrupt(1, isr_stop, HIGH) ;
-    interrupts() ;
+  bluetooth.begin();
+     
+  aci_evt_opcode_t status = ACI_EVT_DISCONNECTED;
+       
+  /* wait for connect */
+  while (status != ACI_EVT_CONNECTED) {
+    bluetooth.pollACI();
+    status = bluetooth.getState();
   }
+         
+  /* dump payload */
+  bluetooth.print("start");
+  send_point("43.7", "-70.6", "1.5");
+  send_point("43.6", "-70.6", "1.4");
+  send_point("43.6", "-70.5", "1.3");
+  send_point("43.7", "-70.5", "1.2");
+  send_point("43.7", "-70.6", "1.1");
+  bluetooth.print("finish");
 }
 
-bool debounce(int pin) 
+/* for some reason without pollACI between each call,
+ *  * bluetooth.print bugs out after ~25 chars. */
+void send_point(String latitude, String longitude, String speed)
 {
-  bool flag = 1 ;
-  for (int i = 0; i < 100; i++) {
-     if (digitalRead(pin) != HIGH ) {
-       flag = 0 ;
-       return flag ;
-     }
-  }
-  return flag ;
+  bluetooth.print(latitude);
+  bluetooth.pollACI();
+  bluetooth.print(longitude);
+  bluetooth.pollACI();
+  bluetooth.print(speed);
+  bluetooth.pollACI();
 }
 
 
