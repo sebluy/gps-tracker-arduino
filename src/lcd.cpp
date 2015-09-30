@@ -2,6 +2,7 @@
 #include "Arduino.h"
 #include "lcd.h"
 #include "avr/pgmspace.h"
+#include "string.h"
 
 void lcd_write_char(char character)
 {
@@ -41,8 +42,8 @@ void lcd_pos(int x, int y)
 
 void lcd_init(void)
 {
-  SPI.begin();
-  SPI.setBitOrder(MSBFIRST) ;
+  //SPI.begin();
+  //SPI.setBitOrder(MSBFIRST) ;
   
   pinMode(LCD_SCE, OUTPUT);
   pinMode(LCD_RST, OUTPUT);
@@ -66,11 +67,41 @@ void lcd_init(void)
  * issuing each character in the string
  *
  */
-void lcd_write_str(char *characters)
+void lcd_write_str(char *str)
 {
-  while (*characters)
-  {
-    lcd_write_char(*characters++);
+  unsigned int len = 0 ;
+  unsigned int cur_line_len = 0 ;
+  unsigned int line = 0 ;
+  char * pch = NULL ;
+  
+  /* Find length of string */
+  len = strlen(str) ;
+  
+  /* Print normally if it can fit on one line */
+  if (len <= LCD_LINE_LEN) {
+    while (*str) {
+      lcd_write_char(*str++);
+    }
+  } else {
+    pch = strtok(str, " ") ;
+    while (pch != NULL) {
+      if (cur_line_len+strlen(pch)+1 <= LCD_LINE_LEN) {
+        lcd_write_str(pch) ;
+        lcd_write_str(" ") ;
+        cur_line_len += strlen(pch)+1 ;
+      } 
+      /*
+      else if (cur_line_len+strlen(pch)+1 > LCD_LINE_LEN)  {
+        line++ ;
+        cur_line_len = 0 ;
+        lcd_pos(0, line) ;
+        lcd_write_str(pch) ;
+        lcd_write_str(" ") ;
+        cur_line_len += strlen(pch)+1 ;
+      }
+      */
+      pch = strtok (NULL, " ,.-");
+    }  
   }
 }
 
@@ -85,14 +116,15 @@ void lcd_write_str(char *characters)
  */
 void lcd_write_cmd(byte dc, byte data)
 {
-  digitalWrite(LCD_DC, dc);    /* Mode select */
-  digitalWrite(LCD_SCE, LOW);  /* Chip enable active low */
+   digitalWrite(LCD_DC, dc);    /* Mode select */
   
   /* Write command/address/data byte */
   //shiftOut(LCD_MOSI, LCD_SCLK, MSBFIRST, data);
+  SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
+  digitalWrite(LCD_SCE, LOW);  /* Chip enable active low */
   SPI.transfer(data) ;
-  
   digitalWrite(LCD_SCE, HIGH);  /* Chip enable high */
+  SPI.endTransaction();
 }
 
 /* 
@@ -105,3 +137,5 @@ void lcd_print_float(double d)
   dtostrf(d, 1, 3, buf) ;
   lcd_write_str(buf) ;
 }
+
+
