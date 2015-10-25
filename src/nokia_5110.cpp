@@ -1,6 +1,6 @@
 #include "SPI.h"
 #include "Arduino.h"
-#include "lcd.h"
+#include "nokia_5110.h"
 #include "avr/pgmspace.h"
 #include "string.h"
 

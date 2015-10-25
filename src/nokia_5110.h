@@ -1,5 +1,5 @@
-#ifndef LCD_H
-#define LCD_H
+#ifndef NOKIA_5110_H
+#define NOKIA_5110_H
 
 #ifdef _cpluscplus
 extern "C" {
