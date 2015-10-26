@@ -15,11 +15,11 @@ extern "C" {
 #define GPSSerial Serial1          /* Serial talking to GPS */
 #define USBSerial Serial           /* USB serial port */
 
-#define GPSECHO  false             /* Disable echo of GPS data to serial */
+#define GPSECHO  false
 #define MEAN_EARTH_RADIUS 6371e3   /* Mean radius of Earth (haversine calculation) */
 #define M_TO_FT 3.28084            /* Conversion ratio from metres to feet */
 
-/* Define Adafruit GPS and I2C FRAM objects */
+/* Define Adafruit GPS object */
 Adafruit_GPS GPS(&GPSSerial);
 
 
@@ -29,17 +29,16 @@ void setup(void)
   lcd_init();
   lcd_clear_display();
   lcd_write_str("Cache Rules Everything Around Me");
-  delay(500) ;
+  delay(2500) ;
   lcd_clear_display();
   
   /* Wait for searial to be ready - start GPS/USB at 9600 baud */
-  while(!USBSerial) ;
   USBSerial.begin(9600);
   GPS.begin(9600);
   
-  /* Configure GPS - 100MHz update frequency, full NMEA output */
+  /* Configure GPS - 1Hz update frequency, full NMEA output */
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_100_MILLIHERTZ) ;
+  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ) ;
   GPS.sendCommand(PGCMD_ANTENNA);
   GPSSerial.println(PMTK_Q_RELEASE);
   
@@ -49,18 +48,12 @@ void setup(void)
 
 void loop(void)
 { 
-  char c = GPS.read();
-
-  if ((c) && (GPSECHO)) {
-     USBSerial.write(c);
-  }
-
   if (GPS.newNMEAreceived()) {
      // add back in && GPS.fix
-     if (GPS.parse(GPS.lastNMEA())) {
+     if (GPS.parse(GPS.lastNMEA()) ) {
        print_GPS_results() ;
      }
-  }
+  } 
 }
 
 void print_GPS_results(void)
@@ -69,8 +62,14 @@ void print_GPS_results(void)
   static double dist_coord = 0.0 ;
   static double last_lat ;
   static double last_lng ;
+ 
+  double avg_speed = 0.0 ;
+ 
+  static uint8_t log_count = 0 ;
   static int first = 1 ;
-  uint32_t unix_time = 0;
+  
+  static uint32_t unix_time = 0 ;
+  static uint32_t time_elapsed = 0 ;
 
   double speed = GPS.speed / 1.15076 ;
   double coord_diff = 0.0 ;
@@ -84,25 +83,30 @@ void print_GPS_results(void)
     speed = (coord_diff * 360.0 ) / 5280.0 ;
   }
 
+  
+
   last_lat = GPS.latitude ;
   last_lng = GPS.longitude ;
 
-  lcd_clear_display() ;
-  lcd_write_str("Dist:") ;
-  
-  lcd_pos(0,1) ;
-  lcd_print_float(dist_coord) ;
+  unix_time = get_unix_time(GPS.hour, GPS.minute, GPS.seconds,
+                GPS.day, GPS.month, GPS.year) ;
+
+  avg_speed = dist_coord/time_elapsed ;
   
   lcd_pos(0,3) ;
-  lcd_write_str("Speed:") ;
+  lcd_print_float(dist_coord) ;
   
   lcd_pos(0,4) ;
   lcd_print_float(speed) ;
   
-  unix_time = get_unix_time(GPS.hour, GPS.minute, GPS.seconds,
-                GPS.day, GPS.month, GPS.year) ;
+  log_count++ ;
   
-  fram_log(last_lat, last_lng, unix_time) ;
+  lcd_print_time(GPS.hour, GPS.minute, GPS.seconds) ;
+  
+  if(log_count == 10) {
+    fram_log(last_lat, last_lng, unix_time) ;
+    log_count = 0 ;
+  }
 }
 
 bool debounce(int pin) 

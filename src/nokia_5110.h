@@ -133,6 +133,8 @@ void lcd_write_cmd(byte dc, byte data);
 
 void lcd_print_float(double d);
 
+void lcd_print_time(int hh, int mm, int ss) ;
+
 #ifdef _cplusplus
 }
 #endif

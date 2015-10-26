@@ -78,30 +78,8 @@ void lcd_write_str(char *str)
   len = strlen(str) ;
   
   /* Print normally if it can fit on one line */
-  if (len <= LCD_LINE_LEN) {
-    while (*str) {
-      lcd_write_char(*str++);
-    }
-  } else {
-    pch = strtok(str, " ") ;
-    while (pch != NULL) {
-      if (cur_line_len+strlen(pch)+1 <= LCD_LINE_LEN) {
-        lcd_write_str(pch) ;
-        lcd_write_str(" ") ;
-        cur_line_len += strlen(pch)+1 ;
-      } 
-      /*
-      else if (cur_line_len+strlen(pch)+1 > LCD_LINE_LEN)  {
-        line++ ;
-        cur_line_len = 0 ;
-        lcd_pos(0, line) ;
-        lcd_write_str(pch) ;
-        lcd_write_str(" ") ;
-        cur_line_len += strlen(pch)+1 ;
-      }
-      */
-      pch = strtok (NULL, " ,.-");
-    }  
+  while (*str) {
+    lcd_write_char(*str++);
   }
 }
 
@@ -137,5 +115,23 @@ void lcd_print_float(double d)
   dtostrf(d, 1, 3, buf) ;
   lcd_write_str(buf) ;
 }
+
+void lcd_print_time(int hh, int mm, int ss)
+{
+  char buf[13] ;
+ 
+  /* Convert to EST */
+  if (hh < 4) {
+    hh = 24 - hh ;
+  } else {
+    hh = hh - 4 ;
+  }
+  
+  lcd_pos(2,0) ;
+  sprintf(buf, "%02d:%02d:%02d", hh, mm, ss) ;
+  lcd_write_str(buf) ;
+}
+
+
 
 
