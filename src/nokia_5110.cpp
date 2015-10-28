@@ -4,6 +4,17 @@
 #include "avr/pgmspace.h"
 #include "string.h"
 
+/*!
+ * @brief Writes a single character to the LCD
+ *
+ * This function takes in a single character and 
+ * writes it to the current position on the LCD.
+ *
+ * @param[in]  character  A character to write to the LCD
+ *
+ * @returns    Nothing.
+ *
+ */
 void lcd_write_char(char character)
 {
   int i ;
@@ -15,6 +26,14 @@ void lcd_write_char(char character)
   lcd_write_cmd(HIGH, 0x00);
 }
 
+/*!
+ * @brief Clears the entire display
+ *
+ * This function clears the LCD, row by row.
+ *
+ * @returns    Nothing.
+ *
+ */
 void lcd_clear_display(void)
 {
   int i ;
@@ -25,6 +44,17 @@ void lcd_clear_display(void)
   lcd_pos(0,0) ;
 }
 
+/*!
+ * @brief Clears a single row on the display
+ *
+ * Clears the selected row y on the LCD. y must
+ * be an integer with value between 0 and 4.
+ *
+ * @param[in]  y  The row to clear on the LCD (must be a value between 0 and 4)
+ *
+ * @returns    Nothing.
+ *
+ */
 void lcd_clear_row(int y)
 {
   int i ;
@@ -34,12 +64,32 @@ void lcd_clear_row(int y)
   }
 }
 
+/*!
+ * @brief Moves the cursor on the display to position (x,y)
+ *
+ * This function sets the cursor position (x,y) corresponding
+ * to the x and y values in the arguments.
+ *
+ * @param[in]  x  The column for the cursor to appear on (0-12)
+ * @param[in]  y  The row for the cursor to appear on (0-4)
+ *
+ * @returns    Nothing.
+ *
+ */
 void lcd_pos(int x, int y)
 {
   lcd_write_cmd(LOW, 0x80 | x);  // Column.
   lcd_write_cmd(LOW, 0x40 | y);  // Row.  
 }
 
+/*!
+ * @brief Initialises the LCD
+ *
+ * Configures the LCD by setting SCE, RST, DC, MOSI, SCLK as outputs,
+ * then sending the commands to setup the LCD for display of data
+ *
+ * @returns    Nothing.
+ */
 void lcd_init(void)
 {
   //SPI.begin();
@@ -60,11 +110,14 @@ void lcd_init(void)
   lcd_write_cmd(LOW, 0x0C );  // LCD in normal mode.
 }
 
-/* 
- * Writes string to the LCD 
+/*!
+ * @brief Writes a string to the LCD
  *
- * Writes a string to the LCD by individually
- * issuing each character in the string
+ * Writes a generic string to the LCD
+ *
+ * @param[in]  characters  Pointer to a character array (string)
+ *
+ * @returns    Nothing.
  *
  */
 void lcd_write_str(char *str)
@@ -83,14 +136,19 @@ void lcd_write_str(char *str)
   }
 }
 
-/* 
- * Issues a command to the LCD
+/*!
+ * @brief Writes a command to the LCD
  *
  * Commands are issued on the Nokia 5110 by writing the 
  * relevant mode select (D/CBAR), pulling the chip-enable
  * (SCE) low (active low), entering the command byte 
  * (D7-D0), then bringing chip enable high again
- * 
+ *
+ * @param[in]  dc    The value to set dc
+ * @param[in]  data  A command byte in the form DB7, DB6 .. ,DB0
+ *
+ * @returns    Nothing.
+ *
  */
 void lcd_write_cmd(byte dc, byte data)
 {
@@ -105,8 +163,14 @@ void lcd_write_cmd(byte dc, byte data)
   SPI.endTransaction();
 }
 
-/* 
- * Prints a floating point number to the LCD
+/*!
+ * @brief Prints a floating point number to the LCD
+ *
+ * Writes a floating point number d to the LCD
+ *
+ * @param[in]  d    Floating point value to display
+ *
+ * @returns    Nothing.
  *
  */
 void lcd_print_float(double d)
@@ -116,6 +180,19 @@ void lcd_print_float(double d)
   lcd_write_str(buf) ;
 }
 
+/*!
+ * @brief Writes the time in hh:mm:ss to the LCD
+ *
+ * Takes in three integers indicating the hours, minutes, and 
+ * seconds of a time string, and displays them to the LCD.
+ *
+ * @param[in]  hh    Integer expressing the hours of a time string
+ * @param[in]  mm    Integer expressing the minutes of a time string
+ * @param[in]  ss    Integer expressing the seconds of a time string
+ *
+ * @returns    Nothing.
+ *
+ */
 void lcd_print_time(int hh, int mm, int ss)
 {
   char buf[13] ;

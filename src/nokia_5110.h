@@ -1,23 +1,36 @@
+/*!
+ * @file
+ *
+ * @brief Header file for interfacing with the Nokia 5110
+ *
+ * @author Andrew Hayford
+ * @author Sebastian Luy
+ *
+ * @date 28 October, 2015
+ *
+ * This file contains the necessary functions to communicate
+ * with the Nokia 5110 LCD. This includes writing strings, clearing
+ * the display, and writing commands.
+ */
 #ifndef NOKIA_5110_H
 #define NOKIA_5110_H
 
+/* Arduino directive - required in header */
 #ifdef _cpluscplus
 extern "C" {
 #endif
 
-#define LCD_SCE   18
-#define LCD_RST   19
-#define LCD_DC    20
-#define LCD_MOSI  16
-#define LCD_SCLK  15
+#define LCD_SCE   18  /*! Fio V3 Chip select pin */
+#define LCD_RST   19  /*! Fio V3 Reset pin */
+#define LCD_DC    20  /*! Fio V3 MISO/DC pin */
+#define LCD_MOSI  16  /*! Fio V3 MOSI pin */
+#define LCD_SCLK  15  /*! Fio V3 SCLK pin */
 
-#define LCD_X     84
-#define LCD_Y     48
+#define LCD_X     84  /*! x-dimension of Nokia 5110 */
+#define LCD_Y     48  /*! y-dimension of Nokia 5110 */
 
-#define LCD_LINE_LEN  12
-
-/* PROGMEM puts data in flash (in order to conserve memory) */
-static const byte ASCII[][5] PROGMEM =
+/* Simple font in ASCII - stored in Flash */
+static const byte ASCII[][5] PROGMEM  =
 {
 {0x00, 0x00, 0x00, 0x00, 0x00} // 20  
 ,{0x00, 0x00, 0x5f, 0x00, 0x00} // 21 !
@@ -117,24 +130,123 @@ static const byte ASCII[][5] PROGMEM =
 ,{0x78, 0x46, 0x41, 0x46, 0x78} // 7f →
 };
 
+
+/*!
+ * @brief Writes a single character to the LCD
+ *
+ * This function takes in a single character and 
+ * writes it to the current position on the LCD.
+ *
+ * @param[in]  character  A character to write to the LCD
+ *
+ * @returns    Nothing.
+ *
+ */
 void lcd_write_char(char character);
 
+/*!
+ * @brief Clears the entire display
+ *
+ * This function clears the LCD, row by row.
+ *
+ * @returns    Nothing.
+ *
+ */
 void lcd_clear_display(void);
 
+/*!
+ * @brief Clears a single row on the display
+ *
+ * Clears the selected row y on the LCD. y must
+ * be an integer with value between 0 and 4.
+ *
+ * @param[in]  y  The row to clear on the LCD (must be a value between 0 and 4)
+ *
+ * @returns    Nothing.
+ *
+ */
 void lcd_clear_row(int y);
 
+/*!
+ * @brief Moves the cursor on the display to position (x,y)
+ *
+ * This function sets the cursor position (x,y) corresponding
+ * to the x and y values in the arguments.
+ *
+ * @param[in]  x  The column for the cursor to appear on (0-12)
+ * @param[in]  y  The row for the cursor to appear on (0-4)
+ *
+ * @returns    Nothing.
+ *
+ */
 void lcd_pos(int x, int y);
 
+/*!
+ * @brief Initialises the LCD
+ *
+ * Configures the LCD by setting SCE, RST, DC, MOSI, SCLK as outputs,
+ * then sending the commands to setup the LCD for display of data
+ *
+ * @returns    Nothing.
+ */
 void lcd_init(void);
 
+/*!
+ * @brief Writes a string to the LCD
+ *
+ * Writes a generic string to the LCD
+ *
+ * @param[in]  characters  Pointer to a character array (string)
+ *
+ * @returns    Nothing.
+ *
+ */
 void lcd_write_str(char *characters);
 
+/*!
+ * @brief Writes a command to the LCD
+ *
+ * Commands are issued on the Nokia 5110 by writing the 
+ * relevant mode select (D/CBAR), pulling the chip-enable
+ * (SCE) low (active low), entering the command byte 
+ * (D7-D0), then bringing chip enable high again
+ *
+ * @param[in]  dc    The value to set dc
+ * @param[in]  data  A command byte in the form DB7, DB6 .. ,DB0
+ *
+ * @returns    Nothing.
+ *
+ */
 void lcd_write_cmd(byte dc, byte data);
 
+/*!
+ * @brief Prints a floating point number to the LCD
+ *
+ * Writes a floating point number d to the LCD
+ *
+ * @param[in]  d    Floating point value to display
+ *
+ * @returns    Nothing.
+ *
+ */
 void lcd_print_float(double d);
 
+/*!
+ * @brief Writes the time in hh:mm:ss to the LCD
+ *
+ * Takes in three integers indicating the hours, minutes, and 
+ * seconds of a time string, and displays them to the LCD.
+ *
+ * @param[in]  hh    Integer expressing the hours of a time string
+ * @param[in]  mm    Integer expressing the minutes of a time string
+ * @param[in]  ss    Integer expressing the seconds of a time string
+ *
+ * @returns    Nothing.
+ *
+ */
 void lcd_print_time(int hh, int mm, int ss) ;
 
+/* Closing brace for extern C directive */
 #ifdef _cplusplus
 }
 #endif
