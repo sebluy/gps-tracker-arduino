@@ -22,6 +22,7 @@ extern "C" {
 /* Define Adafruit GPS object */
 Adafruit_GPS GPS(&GPSSerial);
 
+uint8_t tracking_en = 0 ;
 
 void setup(void)
 {
@@ -43,17 +44,28 @@ void setup(void)
   GPSSerial.println(PMTK_Q_RELEASE);
   
   /* Initialise the FRAM module */
-  fram_init() ;
+  //fram_init() ;
+  
+  attachInterrupt(1, isr_tracking, HIGH);
+  GPS.sendCommand(PMTK_STANDBY) ;
 }
 
 void loop(void)
 { 
-  if (GPS.newNMEAreceived()) {
-     // add back in && GPS.fix
-     if (GPS.parse(GPS.lastNMEA()) ) {
-       print_GPS_results() ;
-     }
-  } 
+  if(tracking_en) {
+    char c = GPS.read();
+    if ((c) && (GPSECHO)) {
+      USBSerial.write(c);
+    }
+    
+    if (GPS.newNMEAreceived()) {
+      
+      // add back in && GPS.fix
+      if (GPS.parse(GPS.lastNMEA()) && GPS.fix) {
+        print_GPS_results() ;
+      }
+    }
+  }
 }
 
 void print_GPS_results(void)
@@ -71,27 +83,32 @@ void print_GPS_results(void)
   static uint32_t unix_time = 0 ;
   static uint32_t time_elapsed = 0 ;
 
+  static uint32_t start_time = 0 ;
+
   double speed = GPS.speed / 1.15076 ;
   double coord_diff = 0.0 ;
   if (first) {
     first = !first ;
+    start_time = get_unix_time(GPS.hour, GPS.minute, GPS.seconds,
+                GPS.day, GPS.month, GPS.year) ; 
   } else {
     dist_speed += (speed / 3600.0) * 10.0 * 5280 ;
     coord_diff = calc_dist_coord(GPS.latitude, GPS.longitude,
                                  last_lat, last_lng) * M_TO_FT ;
     dist_coord +=  coord_diff ;
     speed = (coord_diff * 360.0 ) / 5280.0 ;
-  }
-
   
-
+    unix_time = get_unix_time(GPS.hour, GPS.minute, GPS.seconds,
+                GPS.day, GPS.month, GPS.year) ;
+  }
+  
+  time_elapsed = unix_time - start_time ;
+  
   last_lat = GPS.latitude ;
   last_lng = GPS.longitude ;
-
-  unix_time = get_unix_time(GPS.hour, GPS.minute, GPS.seconds,
-                GPS.day, GPS.month, GPS.year) ;
-
-  avg_speed = dist_coord/time_elapsed ;
+  
+  lcd_pos(0,1) ;
+  lcd_print_float(time_elapsed) ;
   
   lcd_pos(0,3) ;
   lcd_print_float(dist_coord) ;
@@ -99,20 +116,21 @@ void print_GPS_results(void)
   lcd_pos(0,4) ;
   lcd_print_float(speed) ;
   
-  log_count++ ;
-  
   lcd_print_time(GPS.hour, GPS.minute, GPS.seconds) ;
   
+  /*
+  log_count++
   if(log_count == 10) {
     fram_log(last_lat, last_lng, unix_time) ;
     log_count = 0 ;
   }
+  */
 }
 
 bool debounce(int pin) 
 {
   bool flag = 1 ;
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 1000; i++) {
      if (digitalRead(pin) != HIGH ) {
        flag = 0 ;
        return flag ;
@@ -121,4 +139,17 @@ bool debounce(int pin)
   return flag ;
 }
 
-
+void isr_tracking(void)
+ {
+  if ( debounce(2) ) {
+    noInterrupts() ;
+    if ( tracking_en == 1) {
+      tracking_en = 0 ;
+      GPS.sendCommand(PMTK_STANDBY) ;
+    } else {
+      tracking_en = 1 ;
+      GPS.sendCommand(PMTK_AWAKE) ;
+    }    
+    interrupts() ;
+  }
+ }

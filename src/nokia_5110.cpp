@@ -119,13 +119,6 @@ void lcd_print_float(double d)
 void lcd_print_time(int hh, int mm, int ss)
 {
   char buf[13] ;
- 
-  /* Convert to EST */
-  if (hh < 4) {
-    hh = 24 - hh ;
-  } else {
-    hh = hh - 4 ;
-  }
   
   lcd_pos(2,0) ;
   sprintf(buf, "%02d:%02d:%02d", hh, mm, ss) ;
