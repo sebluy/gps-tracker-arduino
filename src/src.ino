@@ -23,6 +23,7 @@ extern "C" {
 Adafruit_GPS GPS(&GPSSerial);
 
 uint8_t tracking_en = 0 ;
+uint8_t new_data = 0 ;
 
 void setup(void)
 {
@@ -47,6 +48,7 @@ void setup(void)
   //fram_init() ;
   
   attachInterrupt(1, isr_tracking, HIGH);
+  attachInterrupt(0, isr_pps, RISING) ;
   GPS.sendCommand(PMTK_STANDBY) ;
 }
 
@@ -61,8 +63,9 @@ void loop(void)
     if (GPS.newNMEAreceived()) {
       
       // add back in && GPS.fix
-      if (GPS.parse(GPS.lastNMEA()) && GPS.fix) {
+      if (GPS.parse(GPS.lastNMEA()) && GPS.fix && new_data) {
         print_GPS_results() ;
+        new_data = 0 ;
       }
     }
   }
@@ -152,4 +155,9 @@ void isr_tracking(void)
     }    
     interrupts() ;
   }
+ }
+ 
+ void isr_pps(void)
+ {
+   new_data = 1 ;
  }
