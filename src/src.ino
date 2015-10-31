@@ -1,81 +1,98 @@
 #include <SPI.h>
+#include <avr/eeprom.h>
 #include "Adafruit_BLE_UART.h"
-#include "lcd.h"
 
 #define REQ 9
 #define RDY 7
 #define RST 10
 
-#define BLUETOOTH_INTERRUPT 1 /* pin 2 (D2)*/
-
-#define USBSerial Serial
-
-int bluetooth_button_pressed = 0;
-
-Adafruit_BLE_UART bluetooth = Adafruit_BLE_UART(REQ, RDY, RST);
-
 void setup(void)
-{
-  attachInterrupt(BLUETOOTH_INTERRUPT, on_bluetooth_interrupt, HIGH);
-  bluetooth.setDeviceName("Ralph");
-  lcd_init();
-  lcd_clear_display();
-  lcd_write_str("My name");
-  lcd_pos(0,1);
-  lcd_write_str("is Ralph");
+{ 
 }
 
-void loop(void)
+void loop()
 {
-  if (bluetooth_button_pressed) {
-    lcd_clear_display();
-    lcd_write_str("Advertising");
-    delay(1000);
-    send();
-    delay(5000);
-    lcd_pos(0,1);
-    lcd_write_str("Done");
-    bluetooth_button_pressed = 0;
-  }
+    Serial.begin(9600);
+    while(!Serial);
+
+    Adafruit_BLE_UART bluetooth = Adafruit_BLE_UART(REQ, RDY, RST);
+    bluetooth.setDeviceName("PETRICE"); /* 7 characters max! */
+    bluetooth.begin();
+
+    while (1) {
+        get_and_store_waypoints(bluetooth);
+    }
 }
 
-void on_bluetooth_interrupt(void)
+void get_and_store_waypoints(Adafruit_BLE_UART bluetooth)
 {
-    bluetooth_button_pressed = 1;
+    char buffer[21];
+    uint32_t count, received;
+    float latitude, longitude;
+    uint32_t *eeprom_address = 0;
+
+    Serial.println("Ready for action");
+
+    /* get count */
+    bluetooth_get_token(bluetooth, buffer);
+    count = atoi(buffer);
+    sprintf(buffer, "%d", count);
+    Serial.println(buffer);
+
+    Serial.println("Writting to EEPROM");
+    eeprom_write_dword(eeprom_address, count);
+    eeprom_address += 1;
+
+    /* get latitudes and longitudes */
+    for (received = 0; received < count; received++) {
+
+        bluetooth_get_token(bluetooth, buffer);
+        latitude = (float)atof(buffer);
+        eeprom_write_float((float*)eeprom_address, latitude);
+
+        eeprom_address += 1;
+
+        bluetooth_get_token(bluetooth, buffer);
+        longitude = (float)atof(buffer);
+        eeprom_write_float((float*)eeprom_address, longitude);
+
+        eeprom_address += 1;
+    }
+
+    Serial.println("Reading out latlngs from eeprom");
+
+    eeprom_address = (uint32_t*)4;
+    /* get latitudes and longitudes */
+    for (int read = 0; read < count; read++) {
+        latitude = eeprom_read_float((float*)eeprom_address);
+        Serial.println(latitude);
+        eeprom_address += 1;
+
+        longitude = eeprom_read_float((float*)eeprom_address);
+        Serial.println(longitude);
+        eeprom_address += 1;
+    }
+
+    Serial.println("All good homie");
 }
 
-void send(void)
+/* blocks until data is available from bluetooth */
+aci_evt_opcode_t bluetooth_get_token(Adafruit_BLE_UART bluetooth, char buffer[20])
 {
-  bluetooth.begin();
-     
-  aci_evt_opcode_t status = ACI_EVT_DISCONNECTED;
-       
-  /* wait for connect */
-  while (status != ACI_EVT_CONNECTED) {
-    bluetooth.pollACI();
-    status = bluetooth.getState();
-  }
-         
-  /* dump payload */
-  bluetooth.print("start");
-  send_point("43.7", "-70.6", "1.5");
-  send_point("43.6", "-70.6", "1.4");
-  send_point("43.6", "-70.5", "1.3");
-  send_point("43.7", "-70.5", "1.2");
-  send_point("43.7", "-70.6", "1.1");
-  bluetooth.print("finish");
+    aci_evt_opcode_t status;
+    int pos = 0;
+
+    /* wait for token */
+    while (!bluetooth.available()) {
+        bluetooth.pollACI();
+        status = bluetooth.getState();
+    }
+
+    /* read token into buffer */
+    while (bluetooth.available()) {
+        buffer[pos++] = bluetooth.read();
+    }
+    buffer[pos] = '\0';
+
+    return status;
 }
-
-/* for some reason without pollACI between each call,
- *  * bluetooth.print bugs out after ~25 chars. */
-void send_point(String latitude, String longitude, String speed)
-{
-  bluetooth.print(latitude);
-  bluetooth.pollACI();
-  bluetooth.print(longitude);
-  bluetooth.pollACI();
-  bluetooth.print(speed);
-  bluetooth.pollACI();
-}
-
-

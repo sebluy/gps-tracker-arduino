@@ -1,0 +1,9 @@
+Ready for action
+Cmd Queue Full
+Cmd Queue Full
+Cmd Queue Full
+Error in ACI Setup
+ACI Command 6
+Evt Cmd respone: Error. Arduino is in an while(1); loop
+
+Error probably in pollACI after bluetooth begin
