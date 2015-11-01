@@ -1,16 +1,16 @@
 #include <SPI.h>
 #include <SoftwareSerial.h>
 #include <Adafruit_GPS.h>
-#include <Wire.h>
 
 #include "nokia_5110.h"
 
-/* include C file */
 extern "C" {
+#include "types.h"
 #include "haversine.h"
+#include "waypoint_store.h"
 }
 
-#define GPSSerial Serial1          /* Serial talking to GPS */
+#define GPSSerial Serial1
 
 #define WAYPOINT_DISTANCE_THRESHOLD 50 /* meters */
 #define BUSY_LED 17
@@ -41,60 +41,48 @@ void setup(void)
 
 void loop(void)
 { 
-    float *eeprom_index = 0;
-    uint32_t waypoint_count = eeprom_read_dword((uint32_t*)eeprom_index++);
-    /* waypoints from eeprom are stored in degrees */
-    float waypoint_latitude = eeprom_read_float(eeprom_index++);
-    float waypoint_longitude = eeprom_read_float(eeprom_index++);
+    waypoint_store_t waypoint_store;
+    point_t waypoint;
+    point_t tracking_point;
+    char c;
     float distance_to_waypoint;
     int waypoint_num = 0;
 
-    char c;
+    waypoint_store_initialize(&waypoint_store);
+    waypoint = waypoint_store_get_next(&waypoint_store);
 
     while (1) {
         c = GPS.read();
         if (GPS.newNMEAreceived() && GPS.parse(GPS.lastNMEA()) && GPS.fix) {
-            /* mark GPS as read, kind of a hack */
             
             digitalWrite(BUSY_LED, HIGH); /* turn on LED */
+
+            tracking_point.latitude = GPS.latitudeDegrees;
+            tracking_point.longitude = GPS.longitudeDegrees;
             
-            distance_to_waypoint =
-                distance_between_d(waypoint_latitude, waypoint_longitude,
-                                    GPS.latitudeDegrees, GPS.longitudeDegrees);
+            distance_to_waypoint = distance_between(waypoint, tracking_point);
 
             if (distance_to_waypoint < WAYPOINT_DISTANCE_THRESHOLD) {
-                /* get next waypoint */
-                waypoint_latitude = eeprom_read_float(eeprom_index++);
-                waypoint_longitude = eeprom_read_float(eeprom_index++);
-
-                /* update waypoint num */
-                waypoint_num++;
-                waypoint_num = waypoint_num < waypoint_count ? waypoint_num + 1 : 0;
-
-                /* calculate distance to next waypoint */
-                distance_to_waypoint =
-                    distance_between_d(waypoint_latitude, waypoint_longitude,
-                                        GPS.latitudeDegrees, GPS.longitudeDegrees);
+                if (waypoint_store_end(&waypoint_store)) {
+                    /* loop forever if out of waypoints */
+                    lcd_write_str("Path Complete");
+                    while (1);
+                } else {
+                    /* else move on to next waypoint */
+                    waypoint = waypoint_store_get_next(&waypoint_store);
+                    distance_to_waypoint = distance_between(waypoint, tracking_point);
+                }
             }
 
-            print_distance_to_waypoint(distance_to_waypoint, waypoint_latitude, waypoint_longitude);
+            print_distance_to_waypoint(distance_to_waypoint);
 
             digitalWrite(BUSY_LED, LOW); /* turn off LED */
         }
     }
 }
 
-void print_distance_to_waypoint(double distance, double way_lat, double way_lng)
+void print_distance_to_waypoint(double distance)
 {
   lcd_pos(0,0);
   lcd_print_float(distance);
-  lcd_pos(0,1);
-  lcd_print_float(way_lat);
-  lcd_pos(0,2);
-  lcd_print_float(way_lng);
-  lcd_pos(0,3);
-  lcd_print_float(GPS.latitudeDegrees);
-  lcd_pos(0,4);
-  lcd_print_float(GPS.longitudeDegrees);
 }
-
