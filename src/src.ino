@@ -15,51 +15,70 @@ extern "C" {
 #define WAYPOINT_DISTANCE_THRESHOLD 50 /* meters */
 #define BUSY_LED 17
 
-/* Define Adafruit GPS object */
-Adafruit_GPS GPS(&GPSSerial);
+void print_tracking_display(struct tracking_data_t *data)
+{
+    lcd_pos(0, 0);
+    lcd_print_float(data->instant_speed);
+    lcd_pos(0, 1);
+    lcd_print_float(data->average_speed);
+    lcd_pos(0, 2);
+    lcd_print_float(data->time_elapsed);
+    lcd_pos(0, 3);
+    lcd_print_float(data->total_distance);
+    lcd_pos(0, 4);
+    lcd_print_float(data->waypoint_distance);
+}
 
 void setup(void)
 {
-  /* Initialise LCD - Print startup message */
-  lcd_init();
-  lcd_clear_display();
-  lcd_write_str("Waiting for fix...");
+    /* Initialise LCD - Print startup message */
+    lcd_init();
+    lcd_clear_display();
+    lcd_write_str("Waiting for fix...");
   
-  /* Wait for serial to be ready - start GPS at 9600 baud */
-  GPS.begin(9600);
+    pinMode(BUSY_LED, OUTPUT);
 
-  pinMode(BUSY_LED, OUTPUT);
+    /* Configure GPS - 1Hz update frequency, full NMEA output */
+    Adafruit_GPS gps(&GPSSerial);
+    gps.begin(9600);
+    gps.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+    gps.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ) ;
+    gps.sendCommand(PGCMD_ANTENNA);
+    gps.sendCommand(PMTK_Q_RELEASE);
 
-  /* Configure GPS - 1Hz update frequency, full NMEA output */
-  GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ) ;
-  GPS.sendCommand(PGCMD_ANTENNA);
-  GPSSerial.println(PMTK_Q_RELEASE);
-}
-
-void loop(void)
-{ 
     waypoint_store_t waypoint_store;
-
-    point_t waypoint;
-    point_t tracking_point;
-
-    float distance_to_waypoint;
-
     waypoint_store_initialize(&waypoint_store);
-    waypoint = waypoint_store_get_next(&waypoint_store);
+
+    point_t waypoint = waypoint_store_get_next(&waypoint_store);
+
+    tracking_data_t tracking_data = (tracking_data_t){0.0,0.0,0.0,0.0,0.0};
+    tracking_record_t tracking_record = {.num_points = 0, .aggregate_speed = 0.0};
 
     while (1) {
-        gps_wait_for_packet(GPS);
+
+        gps_wait_for_packet(gps);
 
         digitalWrite(BUSY_LED, HIGH); /* turn on LED */
 
-        tracking_point.latitude = GPS.latitudeDegrees;
-        tracking_point.longitude = GPS.longitudeDegrees;
-            
-        distance_to_waypoint = distance_between(waypoint, tracking_point);
+        point_t tracking_point = (point_t){gps.latitudeDegrees, gps.longitudeDegrees};
 
-        if (distance_to_waypoint < WAYPOINT_DISTANCE_THRESHOLD) {
+        tracking_record.num_points++;
+        tracking_record.aggregate_speed += gps.speed;
+
+        /* only add distance if for points 2..n */
+        if (tracking_record.num_points > 1) {
+            tracking_data.total_distance +=
+                distance_between(tracking_record.previous_point, tracking_point);
+        }
+        tracking_record.previous_point = tracking_point;
+
+        tracking_data.instant_speed = gps.speed;
+        tracking_data.average_speed =
+            tracking_record.aggregate_speed/tracking_record.num_points;
+
+        float distance_to_waypoint = distance_between(waypoint, tracking_point);
+
+        if (tracking_data.waypoint_distance < WAYPOINT_DISTANCE_THRESHOLD) {
             if (waypoint_store_end(&waypoint_store)) {
                 /* loop forever if out of waypoints */
                 lcd_write_str("Path Complete");
@@ -68,25 +87,29 @@ void loop(void)
                 /* else move on to next waypoint */
                 waypoint = waypoint_store_get_next(&waypoint_store);
                 distance_to_waypoint = distance_between(waypoint, tracking_point);
+                lcd_write_str("Moving Waypoint");
             }
         }
 
-        print_distance_to_waypoint(distance_to_waypoint);
+        tracking_data.waypoint_distance = distance_to_waypoint;
+
+        print_tracking_display(&tracking_data);
 
         digitalWrite(BUSY_LED, LOW); /* turn off LED */
     }
+
 }
 
-void gps_wait_for_packet(Adafruit_GPS gps)
+/* this loop/setup is begging for globals */
+void loop(void)
+{ 
+}
+
+void gps_wait_for_packet(Adafruit_GPS& gps)
 {
     /* wait until a packet arrives with a fix */
-    while (!(GPS.newNMEAreceived() && GPS.parse(GPS.lastNMEA()) && GPS.fix)) {
-        GPS.read();
+    while (!(gps.newNMEAreceived() && gps.parse(gps.lastNMEA()) && gps.fix)) {
+        gps.read();
     }
 }
 
-void print_distance_to_waypoint(double distance)
-{
-  lcd_pos(0,0);
-  lcd_print_float(distance);
-}

@@ -7,7 +7,7 @@
 /* coordinates in radians */
 double distance_between_radians(point_t a, point_t b)
 {
-  double d, c, del_lat, del_lng ;
+  double d, del_lat, del_lng ;
 
   /* use haversine formula */
   del_lat = fabs(a.latitude - b.latitude) ;
@@ -38,6 +38,6 @@ double distance_between(point_t a, point_t b)
     return distance_between_radians(
         (point_t){degrees_to_radians(a.latitude),
                   degrees_to_radians(a.longitude)},
-        (point_t){degrees_to_radians(b.longitude),
+        (point_t){degrees_to_radians(b.latitude),
                   degrees_to_radians(b.longitude)});
 }
