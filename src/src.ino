@@ -43,7 +43,7 @@ void setup(void)
     /* Configure GPS - 1Hz update frequency, full NMEA output */
     Adafruit_GPS gps(&GPSSerial);
     gps.begin(9600);
-    gps.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+    gps.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCONLY);
     gps.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ) ;
     gps.sendCommand(PGCMD_ANTENNA);
     gps.sendCommand(PMTK_Q_RELEASE);
