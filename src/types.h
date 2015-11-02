@@ -1,6 +1,8 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include <stdint.h>
+
 /* break up declaration and typedef because arduino is dumb */
 struct point_t {
     double latitude;
@@ -12,6 +14,7 @@ struct tracking_record_t {
     int num_points;
     double aggregate_speed;
     point_t previous_point;
+    uint32_t start_time; /* unix epoch time */
 };
 typedef struct tracking_record_t tracking_record_t;
 

@@ -5,6 +5,7 @@
 #include "nokia_5110.h"
 
 extern "C" {
+#include "time.h"
 #include "types.h"
 #include "haversine.h"
 #include "waypoint_store.h"
@@ -17,6 +18,7 @@ extern "C" {
 
 void print_tracking_display(struct tracking_data_t *data)
 {
+    lcd_clear_display();
     lcd_pos(0, 0);
     lcd_print_float(data->instant_speed);
     lcd_pos(0, 1);
@@ -69,16 +71,24 @@ void setup(void)
         if (tracking_record.num_points > 1) {
             tracking_data.total_distance +=
                 distance_between(tracking_record.previous_point, tracking_point);
+        } else {
+            tracking_record.start_time = get_unix_time(gps.hour, gps.minute, gps.seconds,
+                                                       gps.day, gps.month, gps.year);
         }
+
         tracking_record.previous_point = tracking_point;
 
         tracking_data.instant_speed = gps.speed;
         tracking_data.average_speed =
             tracking_record.aggregate_speed/tracking_record.num_points;
 
+        tracking_data.time_elapsed = get_unix_time(gps.hour, gps.minute, gps.seconds,
+                                                   gps.day, gps.month, gps.year) -
+            tracking_record.start_time;
+
         float distance_to_waypoint = distance_between(waypoint, tracking_point);
 
-        if (tracking_data.waypoint_distance < WAYPOINT_DISTANCE_THRESHOLD) {
+        if (distance_to_waypoint < WAYPOINT_DISTANCE_THRESHOLD) {
             if (waypoint_store_end(&waypoint_store)) {
                 /* loop forever if out of waypoints */
                 lcd_write_str("Path Complete");
