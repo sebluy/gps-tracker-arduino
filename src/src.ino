@@ -1,17 +1,11 @@
 #include <SPI.h>
-#include <SoftwareSerial.h>
-#include <Adafruit_GPS.h>
 
 #include "nokia_5110.h"
-
-extern "C" {
 #include "time.h"
 #include "types.h"
 #include "haversine.h"
 #include "waypoint_store.h"
-}
-
-#define GPSSerial Serial1
+#include "gps.h"
 
 #define WAYPOINT_DISTANCE_THRESHOLD 50 /* meters */
 #define BUSY_LED 17
@@ -37,16 +31,13 @@ void setup(void)
     lcd_init();
     lcd_clear_display();
     lcd_write_str("Waiting for fix...");
-  
+
     pinMode(BUSY_LED, OUTPUT);
 
+    gps_t gps;
+    gps_data_t gps_data;
     /* Configure GPS - 1Hz update frequency, full NMEA output */
-    Adafruit_GPS gps(&GPSSerial);
-    gps.begin(9600);
-    gps.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCONLY);
-    gps.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ) ;
-    gps.sendCommand(PGCMD_ANTENNA);
-    gps.sendCommand(PMTK_Q_RELEASE);
+    gps_initialize(&gps);
 
     waypoint_store_t waypoint_store;
     waypoint_store_initialize(&waypoint_store);
@@ -58,54 +49,48 @@ void setup(void)
 
     while (1) {
 
-        gps_wait_for_packet(gps);
+        if (gps_available(&gps)) {
+            digitalWrite(BUSY_LED, HIGH); /* turn on LED */
 
-        digitalWrite(BUSY_LED, HIGH); /* turn on LED */
+            gps_parse(&gps, &gps_data);
 
-        point_t tracking_point = (point_t){gps.latitudeDegrees, gps.longitudeDegrees};
+            point_t tracking_point = gps_data.location;
 
-        tracking_record.num_points++;
-        tracking_record.aggregate_speed += gps.speed;
+            tracking_record.num_points++;
+            tracking_record.aggregate_speed += gps_data.speed;
 
-        /* only add distance if for points 2..n */
-        if (tracking_record.num_points > 1) {
-            tracking_data.total_distance +=
-                distance_between(tracking_record.previous_point, tracking_point);
-        } else {
-            tracking_record.start_time = get_unix_time(gps.hour, gps.minute, gps.seconds,
-                                                       gps.day, gps.month, gps.year);
-        }
+            tracking_data.instant_speed = gps_data.speed;
+            tracking_data.average_speed =
+                tracking_record.aggregate_speed/tracking_record.num_points;
 
-        tracking_record.previous_point = tracking_point;
-
-        tracking_data.instant_speed = gps.speed;
-        tracking_data.average_speed =
-            tracking_record.aggregate_speed/tracking_record.num_points;
-
-        tracking_data.time_elapsed = get_unix_time(gps.hour, gps.minute, gps.seconds,
-                                                   gps.day, gps.month, gps.year) -
-            tracking_record.start_time;
-
-        float distance_to_waypoint = distance_between(waypoint, tracking_point);
-
-        if (distance_to_waypoint < WAYPOINT_DISTANCE_THRESHOLD) {
-            if (waypoint_store_end(&waypoint_store)) {
-                /* loop forever if out of waypoints */
-                lcd_write_str("Path Complete");
-                while (1);
-            } else {
-                /* else move on to next waypoint */
-                waypoint = waypoint_store_get_next(&waypoint_store);
-                distance_to_waypoint = distance_between(waypoint, tracking_point);
-                lcd_write_str("Moving Waypoint");
+            /* only add distance if for points 2..n */
+            if (tracking_record.num_points > 1) {
+                tracking_data.total_distance +=
+                    distance_between(tracking_record.previous_point, tracking_point);
             }
+
+            tracking_record.previous_point = tracking_point;
+
+            float distance_to_waypoint = distance_between(waypoint, tracking_point);
+
+            while (distance_to_waypoint < WAYPOINT_DISTANCE_THRESHOLD) {
+                if (waypoint_store_end(&waypoint_store)) {
+                    /* loop forever if out of waypoints */
+                    lcd_write_str("Path Complete");
+                    while (1);
+                } else {
+                    /* else move on to next waypoint */
+                    waypoint = waypoint_store_get_next(&waypoint_store);
+                    distance_to_waypoint = distance_between(waypoint, tracking_point);
+                }
+            }
+
+            tracking_data.waypoint_distance = distance_to_waypoint;
+
+            print_tracking_display(&tracking_data);
+
+            digitalWrite(BUSY_LED, LOW); /* turn off LED */
         }
-
-        tracking_data.waypoint_distance = distance_to_waypoint;
-
-        print_tracking_display(&tracking_data);
-
-        digitalWrite(BUSY_LED, LOW); /* turn off LED */
     }
 
 }
@@ -114,12 +99,3 @@ void setup(void)
 void loop(void)
 { 
 }
-
-void gps_wait_for_packet(Adafruit_GPS& gps)
-{
-    /* wait until a packet arrives with a fix */
-    while (!(gps.newNMEAreceived() && gps.parse(gps.lastNMEA()) && gps.fix)) {
-        gps.read();
-    }
-}
-

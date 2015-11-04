@@ -1,5 +1,7 @@
 #include <math.h>
+
 #include "haversine.h"
+#include "types.h"
 
 #define MEAN_EARTH_RADIUS 6371e3
 #define M_TO_FT 3.28084
