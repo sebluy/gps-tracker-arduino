@@ -32,7 +32,7 @@ extern "C" {
 /* Simple font in ASCII - stored in Flash */
 static const byte ASCII[][5] PROGMEM  =
 {
-{0x00, 0x00, 0x00, 0x00, 0x00} // 20  
+{0x00, 0x00, 0x00, 0x00, 0x00} // 20
 ,{0x00, 0x00, 0x5f, 0x00, 0x00} // 21 !
 ,{0x00, 0x07, 0x00, 0x07, 0x00} // 22 "
 ,{0x14, 0x7f, 0x14, 0x7f, 0x14} // 23 #
@@ -106,7 +106,7 @@ static const byte ASCII[][5] PROGMEM  =
 ,{0x0c, 0x52, 0x52, 0x52, 0x3e} // 67 g
 ,{0x7f, 0x08, 0x04, 0x04, 0x78} // 68 h
 ,{0x00, 0x44, 0x7d, 0x40, 0x00} // 69 i
-,{0x20, 0x40, 0x44, 0x3d, 0x00} // 6a j 
+,{0x20, 0x40, 0x44, 0x3d, 0x00} // 6a j
 ,{0x7f, 0x10, 0x28, 0x44, 0x00} // 6b k
 ,{0x00, 0x41, 0x7f, 0x40, 0x00} // 6c l
 ,{0x7c, 0x04, 0x18, 0x04, 0x78} // 6d m
@@ -134,7 +134,7 @@ static const byte ASCII[][5] PROGMEM  =
 /*!
  * @brief Writes a single character to the LCD
  *
- * This function takes in a single character and 
+ * This function takes in a single character and
  * writes it to the current position on the LCD.
  *
  * @param[in]  character  A character to write to the LCD
@@ -206,9 +206,9 @@ void lcd_write_str(char *characters);
 /*!
  * @brief Writes a command to the LCD
  *
- * Commands are issued on the Nokia 5110 by writing the 
+ * Commands are issued on the Nokia 5110 by writing the
  * relevant mode select (D/CBAR), pulling the chip-enable
- * (SCE) low (active low), entering the command byte 
+ * (SCE) low (active low), entering the command byte
  * (D7-D0), then bringing chip enable high again
  *
  * @param[in]  dc    The value to set dc
@@ -234,7 +234,7 @@ void lcd_print_float(double d);
 /*!
  * @brief Writes the time in hh:mm:ss to the LCD
  *
- * Takes in three integers indicating the hours, minutes, and 
+ * Takes in three integers indicating the hours, minutes, and
  * seconds of a time string, and displays them to the LCD.
  *
  * @param[in]  hh    Integer expressing the hours of a time string
@@ -244,7 +244,7 @@ void lcd_print_float(double d);
  * @returns    Nothing.
  *
  */
-void lcd_print_time(int hh, int mm, int ss) ;
+void lcd_print_time(int hh, int mm, int ss);
 
 /* Closing brace for extern C directive */
 #ifdef _cplusplus

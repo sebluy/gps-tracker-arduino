@@ -4,23 +4,25 @@
 #include <stdint.h>
 
 struct point_t {
-    double latitude;
-    double longitude;
+    float latitude;
+    float longitude;
 };
 
 struct tracking_record_t {
     int num_points;
-    double aggregate_speed;
-    point_t previous_point;
-    uint32_t start_time; /* unix epoch time */
+    float aggregate_speed;
+    point_t current_waypoint;
+    point_t current_tracking_point;
+    point_t previous_tracking_point;
 };
 
 struct tracking_data_t {
-    double instant_speed;
-    double time_elapsed;
-    double average_speed;
-    double total_distance;
-    double waypoint_distance;
+    float instant_speed; /* knots */
+    int time_elapsed; /* secs */
+    float average_speed; /* knots */
+    float total_distance; /* meters */
+    float waypoint_distance; /* meters */
+    uint8_t waypoint_done;
 };
 
 #endif

@@ -8,8 +8,6 @@
 #define GPSSerial Serial1
 #define PMTK_SET_NMEA_OUTPUT_RMCONLY "$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29"
 #define PMTK_SET_NMEA_UPDATE_1HZ "$PMTK220,1000*1F"
-#define PMTK_SET_NMEA_UPDATE_100_MILLIHERTZ "$PMTK220,10000*2F"
-#define PMTK_API_SET_FIX_CTL_100_MILLIHERTZ  "$PMTK300,10000,0,0,0,0*2C"
 
 #define LATITUDE_OFFSET 20
 #define NS_OFFSET 30
@@ -52,9 +50,9 @@ static uint8_t data_valid(char *nmea) {
     return (uint8_t)(iter[1] == 'A');
 }
 
-static uint8_t nmea_valid(char *nmea)
+uint8_t gps_valid(gps_t *gps)
 {
-    return checksum_good(nmea) && data_valid(nmea);
+    return checksum_good(gps->nmea) && data_valid(gps->nmea);
 }
 
 /* parses string in nmea, filling data fields of gps data */
@@ -129,10 +127,7 @@ uint8_t gps_available(gps_t *gps)
         if (c == '\n') {
             gps->nmea[gps->index] = '\0';
             gps->index = 0;
-            if (nmea_valid(gps->nmea)) {
-                return 1;
-            }
-            /* else keep running but with "new" buffer */
+            return 1;
         /* ignore carriage return */
         } else if (c == '\r') {
             continue;
@@ -154,6 +149,5 @@ void gps_initialize(gps_t *gps)
     GPSSerial.begin(9600);
     delay(10);
     GPSSerial.println(PMTK_SET_NMEA_OUTPUT_RMCONLY);
-    GPSSerial.println(PMTK_SET_NMEA_UPDATE_100_MILLIHERTZ);
-    GPSSerial.println(PMTK_API_SET_FIX_CTL_100_MILLIHERTZ);
+    GPSSerial.println(PMTK_SET_NMEA_UPDATE_1HZ);
 }

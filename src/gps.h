@@ -21,6 +21,7 @@ struct gps_data_t {
 
 void gps_initialize(gps_t *gps);
 uint8_t gps_available(gps_t *gps);
+uint8_t gps_valid(gps_t *gps);
 void gps_parse(gps_t *gps, gps_data_t *data);
 
 #endif

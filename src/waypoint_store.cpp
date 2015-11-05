@@ -24,5 +24,5 @@ point_t waypoint_store_get_next(waypoint_store_t *store)
    1 otherwise */
 uint8_t waypoint_store_end(waypoint_store_t *store)
 {
-    return store->ptr == (float*)(0x4 + store->count*4);
+    return store->ptr == (float*)(0x4 + store->count*8);
 }
