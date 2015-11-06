@@ -16,7 +16,7 @@ struct gps_t {
 
 struct gps_data_t {
     point_t location;
-    double speed;
+    float speed;
 };
 
 void gps_initialize(gps_t *gps);
