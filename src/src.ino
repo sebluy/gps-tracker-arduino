@@ -56,17 +56,9 @@ void setup(void)
 
     pinMode(BUSY_LED, OUTPUT);
 
-    while (!Serial.available());
     gps_t gps;
     gps_data_t gps_data;
     gps_initialize(&gps);
-    /* todo: write code in gps initialize to read ack packets so
-     * the main loop doesn't seem them */
-    while (1) {
-        if (gps_available(&gps)) {
-            Serial.println(gps.nmea);
-        };
-    }
 
     waypoint_store_t waypoint_store;
     waypoint_store_initialize(&waypoint_store);
@@ -77,6 +69,9 @@ void setup(void)
                                          .aggregate_speed = 0.0,
                                          .current_waypoint = initial_waypoint};
 
+    int started = 0;
+    lcd_write_str("Pending Fix");
+
     while (1) {
 
         if (gps_available(&gps)) {
@@ -84,6 +79,11 @@ void setup(void)
             digitalWrite(BUSY_LED, HIGH); /* turn on LED */
 
             if (gps_valid(&gps)) {
+
+                if (!started) {
+                    lcd_clear_display();
+                    started = 1;
+                }
 
                 gps_parse(&gps, &gps_data);
 
@@ -95,8 +95,11 @@ void setup(void)
                 }
 
             }
-            print_tracking_display(&tracking_data);
-            tracking_data.time_elapsed++;
+
+            if (started) {
+                print_tracking_display(&tracking_data);
+                tracking_data.time_elapsed++;
+            }
 
             digitalWrite(BUSY_LED, LOW); /* turn off LED */
         }

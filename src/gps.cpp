@@ -127,7 +127,12 @@ uint8_t gps_available(gps_t *gps)
         if (c == '\n') {
             gps->nmea[gps->index] = '\0';
             gps->index = 0;
-            return 1;
+            /* if more is available, throwout line and read in next */
+            if (GPSSerial.available()) {
+                continue;
+            } else {
+                return 1;
+            }
         /* ignore carriage return */
         } else if (c == '\r') {
             continue;
@@ -149,5 +154,9 @@ void gps_initialize(gps_t *gps)
     GPSSerial.begin(9600);
     delay(10);
     GPSSerial.println(PMTK_SET_NMEA_OUTPUT_RMCONLY);
+    /* wait for response */
+    while (!gps_available(gps));
     GPSSerial.println(PMTK_SET_NMEA_UPDATE_1HZ);
+    /* wait for response */
+    while (!gps_available(gps));
 }
