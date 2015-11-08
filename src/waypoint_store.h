@@ -4,10 +4,10 @@
 #include <stdint.h>
 #include "types.h"
 
-typedef struct {
+struct waypoint_store_t {
     uint32_t count;
     float *ptr;
-} waypoint_store_t;
+};
 
 /* prepare waypoint store for usage */
 void waypoint_store_initialize(waypoint_store_t *store);

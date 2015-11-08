@@ -8,6 +8,7 @@
 #include "types.h"
 #include "haversine.h"
 #include "waypoint_store.h"
+#include "waypoint_writer.h"
 #include "gps.h"
 
 #define REQ 9
@@ -64,9 +65,16 @@ void print_memory_usage()
     Serial.println((int)b);
 }
 
-/* todo: standby/active bluetooth and gps
-   make bluetooth interruptable
-   make bluetooth transactions reliable and "transactional" */
+/* todo:
+   1. make bluetooth interruptable
+   2. make bluetooth transactions reliable and "transactional"
+   3. allow for "invalid" waypoint paths in tracking code
+   4. standby/active bluetooth and gps
+   post-spec:
+   1. multiplex lcd/fram/bluetooth communication
+   (maybe disable interrupts when using non-bluetooth spi)
+   ...
+*/
 void setup(void)
 {
     /* Initialise LCD - Print startup message */
@@ -83,7 +91,7 @@ void setup(void)
     while (1) {
         noInterrupts();
 
-        /* handle green button press */
+        /* green button press in this context means enter tracking mode */
         if (g_green_button_pressed) {
             g_green_button_pressed = 0;
             interrupts();
@@ -99,7 +107,7 @@ void setup(void)
             lcd_write_str("CREAM");
         }
 
-        /* handle blue button press */
+        /* green button press in this context means enter bluetooth mode */
         if (g_blue_button_pressed) {
             g_blue_button_pressed = 0;
             interrupts();
@@ -261,57 +269,67 @@ void run_bluetooth(void)
     Adafruit_BLE_UART bluetooth = Adafruit_BLE_UART(REQ, RDY, RST);
     bluetooth.setDeviceName("PETRICE"); /* 7 characters max! */
     bluetooth.begin();
-    get_and_store_waypoints(bluetooth);
+    get_and_store_waypoints(&bluetooth);
 }
 
-void get_and_store_waypoints(Adafruit_BLE_UART bluetooth)
+void get_and_store_waypoints(Adafruit_BLE_UART *bluetooth)
 {
-    char buffer[21];
-    uint32_t count, received;
-    float latitude, longitude;
-    uint32_t *eeprom_address = 0;
+    uint8_t started = 0;
+    aci_evt_opcode_t bluetooth_status = ACI_EVT_DISCONNECTED;
+    waypoint_writer_t waypoint_writer;
+    waypoint_writer_initialize(&waypoint_writer);
 
-    /* get count */
-    bluetooth_get_token(bluetooth, buffer);
-    count = atoi(buffer);
+    while (1) {
 
-    eeprom_write_dword(eeprom_address, count);
-    eeprom_address += 1;
+        /* quit on blue button pressed */
+        noInterrupts();
+        if (g_blue_button_pressed) {
+            g_blue_button_pressed = 0;
+            interrupts();
+            return;
+        }
+        interrupts();
 
-    /* get latitudes and longitudes */
-    for (received = 0; received < count; received++) {
+        bluetooth->pollACI();
+        bluetooth_status = bluetooth->getState();
 
-        bluetooth_get_token(bluetooth, buffer);
-        latitude = (float)atof(buffer);
-        eeprom_write_float((float*)eeprom_address, latitude);
-
-        eeprom_address += 1;
-
-        bluetooth_get_token(bluetooth, buffer);
-        longitude = (float)atof(buffer);
-        eeprom_write_float((float*)eeprom_address, longitude);
-
-        eeprom_address += 1;
+        if (ACI_EVT_DEVICE_STARTED == bluetooth_status) {
+            if (started) {
+                /* adafruit driver restarts scan by default on disconnect
+                   so this effectively means on disconnect */
+                return;
+            } else {
+                /* keep waiting for connection */
+                continue;
+            }
+        } else if (ACI_EVT_CONNECTED == bluetooth_status) {
+            started |= 1;
+            if (bluetooth->available()) {
+                handle_bluetooth_data(bluetooth, &waypoint_writer);
+            }
+        } else if (ACI_EVT_DISCONNECTED == bluetooth_status) {
+            if (started) {
+                return;
+            } else {
+                continue;
+            }
+        } else {
+            return;
+        }
     }
 }
+            
+#define BLUETOOTH_MAX_LENGTH 20
 
-/* blocks until data is available from bluetooth */
-aci_evt_opcode_t bluetooth_get_token(Adafruit_BLE_UART bluetooth, char buffer[20])
+void handle_bluetooth_data(Adafruit_BLE_UART *bluetooth, waypoint_writer_t *writer)
 {
-    aci_evt_opcode_t status;
+    char buffer[BLUETOOTH_MAX_LENGTH + 1];
     int pos = 0;
 
-    /* wait for token */
-    while (!bluetooth.available()) {
-        bluetooth.pollACI();
-        status = bluetooth.getState();
-    }
-
-    /* read token into buffer */
-    while (bluetooth.available()) {
-        buffer[pos++] = bluetooth.read();
+    while (bluetooth->available()) {
+        buffer[pos++] = bluetooth->read();
     }
     buffer[pos] = '\0';
 
-    return status;
+    waypoint_writer_write(writer, buffer);
 }
