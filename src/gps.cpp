@@ -4,16 +4,21 @@
 
 /* based off of Adafruit arduino driver
    https://github.com/adafruit/Adafruit-GPS-Library */
-
 #define GPSSerial Serial1
 #define PMTK_SET_NMEA_OUTPUT_RMCONLY "$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29"
 #define PMTK_SET_NMEA_UPDATE_1HZ "$PMTK220,1000*1F"
+
+#define PMTK_STANDBY "$PMTK161,0*28"
 
 #define LATITUDE_OFFSET 20
 #define NS_OFFSET 30
 #define LONGITUDE_OFFSET 32
 #define EW_OFFSET 43
 #define SPEED_OFFSET 45
+
+static void ignore_line(void) {
+    while (!GPSSerial.available() || GPSSerial.read() != '\n');
+}
 
 static uint8_t parse_hex(char c) {
     if (c <= '9') {
@@ -151,12 +156,22 @@ void gps_initialize(gps_t *gps)
 {
     gps->index = 0;
     /* start serial with 9600 baud rate */
+
+    GPSSerial.println(PMTK_SET_NMEA_OUTPUT_RMCONLY);
+    ignore_line();
+
+    GPSSerial.println(PMTK_SET_NMEA_UPDATE_1HZ);
+    ignore_line();
+}
+
+void gps_standby(void)
+{
+    GPSSerial.println(PMTK_STANDBY);
+}
+
+void gps_boot(void)
+{
     GPSSerial.begin(9600);
     delay(10);
-    GPSSerial.println(PMTK_SET_NMEA_OUTPUT_RMCONLY);
-    /* wait for response */
-    while (!gps_available(gps));
-    GPSSerial.println(PMTK_SET_NMEA_UPDATE_1HZ);
-    /* wait for response */
-    while (!gps_available(gps));
+    gps_standby();
 }

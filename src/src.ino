@@ -77,6 +77,8 @@ void print_memory_usage()
 */
 void setup(void)
 {
+    gps_boot();
+
     /* Initialise LCD - Print startup message */
     lcd_init();
     lcd_clear_display();
@@ -97,6 +99,7 @@ void setup(void)
             interrupts();
 
             run_tracking();
+            gps_standby();
 
             /* clear all blue presses that occured while in tracking */
             noInterrupts();

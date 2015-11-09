@@ -3,9 +3,7 @@
 
 #include <stdint.h>
 
-extern "C" {
 #include "types.h"
-}
 
 #define NMEA_LINE_LENGTH 80
 
@@ -19,9 +17,13 @@ struct gps_data_t {
     float speed;
 };
 
+void gps_boot(void);
+void gps_standby(void);
 void gps_initialize(gps_t *gps);
+
 uint8_t gps_available(gps_t *gps);
 uint8_t gps_valid(gps_t *gps);
+
 void gps_parse(gps_t *gps, gps_data_t *data);
 
 #endif
