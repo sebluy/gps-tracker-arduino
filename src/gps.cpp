@@ -8,6 +8,7 @@
 #define PMTK_SET_NMEA_OUTPUT_RMCONLY "$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29"
 #define PMTK_SET_NMEA_UPDATE_1HZ "$PMTK220,1000*1F"
 
+#define PMTK_Q_RELEASE "$PMTK605*31"
 #define PMTK_STANDBY "$PMTK161,0*28"
 
 #define LATITUDE_OFFSET 20
@@ -172,6 +173,8 @@ void gps_standby(void)
 void gps_boot(void)
 {
     GPSSerial.begin(9600);
-    delay(10);
+    /* send any message to wakeup if in standby already */
+    GPSSerial.println(PMTK_Q_RELEASE);
+    ignore_line();
     gps_standby();
 }
