@@ -1,8 +1,11 @@
 #include <SPI.h>
 #include <avr/eeprom.h>
 
-#include "Adafruit_BLE_UART.h"
+/* bluetooth dependencies */
+#include <lib_aci.h>
+#include <EEPROM.h>
 
+#include "bluetooth.h"
 #include "nokia_5110.h"
 #include "time.h"
 #include "types.h"
@@ -47,7 +50,7 @@ void print_tracking_display(struct tracking_data_t *data)
 
     lcd_pos(0, 4);
     if (data->waypoint_done) {
-        lcd_write_str("Waypoint Complete");
+        lcd_write_str("Done");
     } else {
         lcd_print_float(data->waypoint_distance);
     }
@@ -78,6 +81,9 @@ void print_memory_usage()
 void setup(void)
 {
     gps_boot();
+
+    bluetooth_t bluetooth;
+    bluetooth_setup(&bluetooth);
 
     /* Initialise LCD - Print startup message */
     lcd_init();
@@ -110,12 +116,13 @@ void setup(void)
             lcd_write_str("CREAM");
         }
 
-        /* green button press in this context means enter bluetooth mode */
+        /* blue button press in this context means enter bluetooth mode */
         if (g_blue_button_pressed) {
             g_blue_button_pressed = 0;
             interrupts();
 
-            run_bluetooth();
+            run_bluetooth(&bluetooth);
+            bluetooth_sleep(&bluetooth);
 
             /* clear all green presses that occured while in bluetooth */
             noInterrupts();
@@ -265,20 +272,19 @@ void blue_button_handler(void)
     last = current;
 }
 
-void run_bluetooth(void)
+void run_bluetooth(bluetooth_t *bluetooth)
 {
     lcd_clear_display();
     lcd_write_str("Bluetooth");
-    Adafruit_BLE_UART bluetooth = Adafruit_BLE_UART(REQ, RDY, RST);
-    bluetooth.setDeviceName("PETRICE"); /* 7 characters max! */
-    bluetooth.begin();
-    get_and_store_waypoints(&bluetooth);
+    //    bluetooth.setDeviceName("PETRICE"); /* 7 characters max! */
+    bluetooth_advertise(bluetooth);
+    get_and_store_waypoints(bluetooth);
 }
 
-void get_and_store_waypoints(Adafruit_BLE_UART *bluetooth)
+void get_and_store_waypoints(bluetooth_t *bluetooth)
 {
     uint8_t started = 0;
-    aci_evt_opcode_t bluetooth_status = ACI_EVT_DISCONNECTED;
+    bluetooth_status_t status = bluetooth_get_status(bluetooth);
     waypoint_writer_t waypoint_writer;
     waypoint_writer_initialize(&waypoint_writer);
 
@@ -293,46 +299,19 @@ void get_and_store_waypoints(Adafruit_BLE_UART *bluetooth)
         }
         interrupts();
 
-        bluetooth->pollACI();
-        bluetooth_status = bluetooth->getState();
+        bluetooth_poll(bluetooth);
+        status = bluetooth_get_status(bluetooth);
 
-        if (ACI_EVT_DEVICE_STARTED == bluetooth_status) {
-            if (started) {
-                /* adafruit driver restarts scan by default on disconnect
-                   so this effectively means on disconnect */
-                return;
-            } else {
-                /* keep waiting for connection */
-                continue;
-            }
-        } else if (ACI_EVT_CONNECTED == bluetooth_status) {
-            started |= 1;
-            if (bluetooth->available()) {
-                handle_bluetooth_data(bluetooth, &waypoint_writer);
-            }
-        } else if (ACI_EVT_DISCONNECTED == bluetooth_status) {
-            if (started) {
-                return;
-            } else {
-                continue;
-            }
+        if (STANDBY == status) {
+            /* device returns to standby after transaction is complete */
+            return;
+        } else if (bluetooth_has_message(bluetooth)) {
+            waypoint_writer_write(&waypoint_writer, bluetooth_get_message(bluetooth));
+        } else if (CONNECTED == status || ADVERTISING == status) {
+            /* keep waiting for message or connection */
+            continue;
         } else {
             return;
         }
     }
-}
-            
-#define BLUETOOTH_MAX_LENGTH 20
-
-void handle_bluetooth_data(Adafruit_BLE_UART *bluetooth, waypoint_writer_t *writer)
-{
-    char buffer[BLUETOOTH_MAX_LENGTH + 1];
-    int pos = 0;
-
-    while (bluetooth->available()) {
-        buffer[pos++] = bluetooth->read();
-    }
-    buffer[pos] = '\0';
-
-    waypoint_writer_write(writer, buffer);
 }

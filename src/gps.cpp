@@ -157,6 +157,16 @@ void gps_initialize(gps_t *gps)
 {
     gps->index = 0;
 
+    /* clear any available data */
+    while (GPSSerial.available()) {
+        GPSSerial.read();
+    }
+
+    /* send message to wakeup gps */
+    GPSSerial.println(PMTK_Q_RELEASE);
+    ignore_line(); /* startup notification */
+    ignore_line(); /* EPO? notification */
+
     GPSSerial.println(PMTK_SET_NMEA_OUTPUT_RMCONLY);
     ignore_line();
 
