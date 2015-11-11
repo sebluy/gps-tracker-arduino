@@ -7,7 +7,6 @@
 
 #include "bluetooth.h"
 #include "nokia_5110.h"
-#include "time.h"
 #include "types.h"
 #include "haversine.h"
 #include "waypoint_store.h"
@@ -82,6 +81,8 @@ void setup(void)
 {
     gps_boot();
 
+    SPI.begin();
+
     bluetooth_t bluetooth;
     bluetooth_setup(&bluetooth);
 
@@ -95,7 +96,6 @@ void setup(void)
 
     pinMode(BUSY_LED, OUTPUT);
 
-    int tracking;
     while (1) {
         noInterrupts();
 

@@ -98,8 +98,8 @@ void lcd_init(void)
   pinMode(LCD_SCE, OUTPUT);
   pinMode(LCD_RST, OUTPUT);
   pinMode(LCD_DC, OUTPUT);
-  pinMode(LCD_MOSI, OUTPUT);
-  pinMode(LCD_SCLK, OUTPUT);
+//  pinMode(LCD_MOSI, OUTPUT);
+//  pinMode(LCD_SCLK, OUTPUT);
   digitalWrite(LCD_RST, LOW);
   digitalWrite(LCD_RST, HIGH);
   lcd_write_cmd(LOW, 0x21 );  // LCD Extended Commands.

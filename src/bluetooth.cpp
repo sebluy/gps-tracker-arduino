@@ -99,6 +99,8 @@ void bluetooth_advertise(bluetooth_t *bluetooth)
 {
     lib_aci_wakeup();
 
+    Serial.println("Waiting for standby");
+
     while (STANDBY != bluetooth->status) {
         bluetooth_poll(bluetooth);
     }
@@ -130,6 +132,12 @@ void bluetooth_sleep(bluetooth_t *bluetooth)
         } else {
             Serial.println("Could not disconnect");
         }
+    }
+
+    if (true == lib_aci_radio_reset()) {
+        Serial.println("Radio reset");
+    } else {
+        Serial.println("Radio reset failed");
     }
 
     /* sleepy time */
@@ -176,6 +184,8 @@ void bluetooth_poll(bluetooth_t *bluetooth)
         case ACI_EVT_DEVICE_STARTED:
         {
             bluetooth->aci_state.data_credit_total = aci_evt->params.device_started.credit_available;
+            Serial.print("Device Mode: ");
+            Serial.println(aci_evt->params.device_started.device_mode);
             switch(aci_evt->params.device_started.device_mode)
             {
             case ACI_DEVICE_SETUP:
