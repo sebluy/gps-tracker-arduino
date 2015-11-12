@@ -2,8 +2,8 @@
 #include <avr/eeprom.h>
 
 /* bluetooth dependencies */
-#include <lib_aci.h>
 #include <EEPROM.h>
+#include <lib_aci.h>
 
 #include "bluetooth.h"
 #include "nokia_5110.h"
