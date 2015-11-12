@@ -1,8 +1,8 @@
 #include <SPI.h>
 #include <lib_aci.h>
 #include <aci_setup.h>
+#include <services.h>
 
-#include "services.h"
 #include "bluetooth.h"
 
 /* Code based on both
@@ -22,7 +22,7 @@ static services_pipe_type_mapping_t * services_pipe_type_mapping = NULL;
 static const hal_aci_data_t setup_msgs[NB_SETUP_MESSAGES] PROGMEM = SETUP_MESSAGES_CONTENT;
 
 /* Define how assert should function in the BLE library */
-void __ble_assert(const char *file, uint16_t line)
+void __ble_assert(const char *file, uint15_t line)
 {
     Serial.print("ERROR ");
     Serial.print(file);
