@@ -1,6 +1,22 @@
+/*!
+ * @file
+ *
+ * @brief Interface for the Nokia 5110 Graphic LCD
+ *
+ * @author Andrew Hayford
+ * @author Sebastian Luy
+ *
+ * @date 11 November, 2015
+ *
+ * This file contains the function definitions required to interface
+ * with the LCD. This includes initialization, printing (characters, floats,
+ * times, strings), and sending commands. 
+ * 
+ */
+
 #include "SPI.h"
 #include "Arduino.h"
-#include "nokia_5110.h"
+#include "lcd.h"
 #include "avr/pgmspace.h"
 #include "string.h"
 
@@ -120,7 +136,7 @@ void lcd_init(void)
  * @returns    Nothing.
  *
  */
-void lcd_write_str(char *str)
+void lcd_print_str(char *str)
 {
   unsigned int len = 0 ;
   unsigned int cur_line_len = 0 ;
@@ -168,16 +184,19 @@ void lcd_write_cmd(byte dc, byte data)
  *
  * Writes a floating point number d to the LCD
  *
- * @param[in]  d    Floating point value to display
+ * @param[in]  d      Floating point value to display
+ * @param[in]  numdec Number of digits after the decimal point 
  *
  * @returns    Nothing.
  *
  */
-void lcd_print_float(double d)
+void lcd_print_float(double d, int numdec)
 {
-  static char buf[13] ;
-  dtostrf(d, 1, 3, buf) ;
-  lcd_write_str(buf) ;
+  static char buf[13] ; /* buffer to hold converted float */
+  
+  /* Convert passed double to string with numdec precision */
+  dtostrf(d, 1, numdec, buf) ;
+  lcd_print_str(buf) ;
 }
 
 /*!
@@ -195,7 +214,9 @@ void lcd_print_float(double d)
  */
 void lcd_print_time(int hh, int mm, int ss)
 {
-  char buf[13] ;
+  char buf[13] ;  /* buffer to hold resulting string - 13 characters per line */
+  
+  /* Write integer values to string in time format */
   sprintf(buf, "%02d:%02d:%02d", hh, mm, ss) ;
-  lcd_write_str(buf) ;
+  lcd_print_str(buf) ;
 }

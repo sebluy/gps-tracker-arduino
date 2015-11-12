@@ -6,77 +6,62 @@
 #include <lib_aci.h>
 
 #include "bluetooth.h"
-#include "nokia_5110.h"
+#include "lcd.h"
 #include "types.h"
 #include "haversine.h"
 #include "waypoint_store.h"
 #include "waypoint_writer.h"
 #include "gps.h"
 
-#define REQ 9
-#define RDY 7
-#define RST 10
+#define REQ 9  /* Fio pin connected to Bluetooth REQ pin */
+#define RDY 7  /* Fio pin connected to Bluetooth RDY pin */
+#define RST 10 /* Fio pin connected to Bluetooth RST pin */
 
-#define WAYPOINT_DISTANCE_THRESHOLD 50 /* meters */
-#define BUSY_LED 17
+#define WAYPOINT_DISTANCE_THRESHOLD 50 /* Distance before changing waypoint to next waypoint */
+#define BUSY_LED 17                    /* Fio Pin for BUSY LED */
 
-#define GREEN_BUTTON_INTERRUPT_NUM 1 /* corresponds to pin 2 (D2) */
-#define BLUE_BUTTON_INTERRUPT_NUM 0 /* corresponds to pin 3 (D3) */
+#define GREEN_BUTTON_INTERRUPT_NUM 1  /* Corresponds to pin 2 (D2) */
+#define BLUE_BUTTON_INTERRUPT_NUM 0   /* Corresponds to pin 3 (D3) */
 
-/* Global flag indicating a button press has not yet been handled.
-   Will be set to 1 on button press, and should be read and cleared
-   atomically (disable/renable interrupts). */
+/*
+ * Global flags indicating a button press has not yet been handled.
+ *  Will be set to 1 on button press, and should be read and cleared
+ *  atomically (disable/renable interrupts).
+ */
 uint8_t g_green_button_pressed = 0;
 uint8_t g_blue_button_pressed = 0;
 
 void print_tracking_display(struct tracking_data_t *data)
 {
     lcd_pos(0, 0);
-    lcd_print_float(data->instant_speed);
+    lcd_print_str("SP ") ;
+    lcd_print_float(data->instant_speed, 1);
 
     lcd_pos(0, 1);
-    lcd_print_float(data->average_speed);
+    lcd_print_str("AV ") ;
+    lcd_print_float(data->average_speed, 1);
 
     lcd_pos(0, 2);
     int elapsed = data->time_elapsed;
     int hours = (elapsed/60/60) % 60;
     int minutes = (elapsed/60) % 60;
     int secs = elapsed % 60;
+    lcd_print_str("TE ") ;
     lcd_print_time(hours, minutes, secs);
 
     lcd_pos(0, 3);
-    lcd_print_float(data->total_distance);
+    lcd_print_str("DI ") ;
+    lcd_print_float(data->total_distance, 0);
 
     lcd_pos(0, 4);
+    lcd_print_str("WP ") ;
     if (data->waypoint_done) {
-        lcd_write_str("Done");
+        lcd_print_str("Done");
     } else {
-        lcd_print_float(data->waypoint_distance);
+        lcd_print_float(data->waypoint_distance, 0);
     }
 }
 
-void print_memory_usage()
-{
-    int a = 0;
-    Serial.print("Stack: ");
-    Serial.println((int)&a);
-
-    uint8_t *b = (uint8_t*)malloc(1);
-    free(b);
-    Serial.print("Heap: ");
-    Serial.println((int)b);
-}
-
-/* todo:
-   1. make bluetooth interruptable
-   2. make bluetooth transactions reliable and "transactional"
-   3. allow for "invalid" waypoint paths in tracking code
-   4. standby/active bluetooth and gps
-   post-spec:
-   1. multiplex lcd/fram/bluetooth communication
-   (maybe disable interrupts when using non-bluetooth spi)
-   ...
-*/
 void setup(void)
 {
     gps_boot();
@@ -89,7 +74,7 @@ void setup(void)
     /* Initialise LCD - Print startup message */
     lcd_init();
     lcd_clear_display();
-    lcd_write_str("CREAM");
+    lcd_print_str("CREAM");
 
     attachInterrupt(GREEN_BUTTON_INTERRUPT_NUM, green_button_handler, FALLING);
     attachInterrupt(BLUE_BUTTON_INTERRUPT_NUM, blue_button_handler, FALLING);
@@ -113,7 +98,7 @@ void setup(void)
             interrupts();
 
             lcd_clear_display();
-            lcd_write_str("CREAM");
+            lcd_print_str("CREAM");
         }
 
         /* blue button press in this context means enter bluetooth mode */
@@ -130,7 +115,7 @@ void setup(void)
             interrupts();
 
             lcd_clear_display();
-            lcd_write_str("CREAM");
+            lcd_print_str("CREAM");
         }
 
         interrupts();
@@ -155,7 +140,7 @@ void run_tracking(void)
 
     int started = 0;
     lcd_clear_display();
-    lcd_write_str("Pending Fix");
+    lcd_print_str("Pending Fix");
 
     while (1) {
 
@@ -244,9 +229,10 @@ void update_waypoint(waypoint_store_t *waypoint_store,
     tracking_data->waypoint_distance = distance_to_waypoint;
 }
 
-/* this loop/setup is begging for globals */
+
 void loop(void)
 { 
+  /* dead loop -this loop/setup is begging for globals */
 }
 
 /* called on button press interrupt */
@@ -275,7 +261,7 @@ void blue_button_handler(void)
 void run_bluetooth(bluetooth_t *bluetooth)
 {
     lcd_clear_display();
-    lcd_write_str("Bluetooth");
+    lcd_print_str("Bluetooth");
     //    bluetooth.setDeviceName("PETRICE"); /* 7 characters max! */
     bluetooth_advertise(bluetooth);
     get_and_store_waypoints(bluetooth);
