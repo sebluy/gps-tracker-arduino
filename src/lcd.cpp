@@ -16,7 +16,7 @@
 
 #include "SPI.h"
 #include "Arduino.h"
-#include "nokia_5110.h"
+#include "lcd.h"
 #include "avr/pgmspace.h"
 #include "string.h"
 
@@ -136,7 +136,7 @@ void lcd_init(void)
  * @returns    Nothing.
  *
  */
-void lcd_write_str(char *str)
+void lcd_print_str(char *str)
 {
   unsigned int len = 0 ;
   unsigned int cur_line_len = 0 ;
@@ -192,9 +192,11 @@ void lcd_write_cmd(byte dc, byte data)
  */
 void lcd_print_float(double d, int numdec)
 {
-  static char buf[13] ;
+  static char buf[13] ; /* buffer to hold converted float */
+  
+  /* Convert passed double to string with numdec precision */
   dtostrf(d, 1, numdec, buf) ;
-  lcd_write_str(buf) ;
+  lcd_print_str(buf) ;
 }
 
 /*!
@@ -212,7 +214,9 @@ void lcd_print_float(double d, int numdec)
  */
 void lcd_print_time(int hh, int mm, int ss)
 {
-  char buf[13] ;
+  char buf[13] ;  /* buffer to hold resulting string - 13 characters per line */
+  
+  /* Write integer values to string in time format */
   sprintf(buf, "%02d:%02d:%02d", hh, mm, ss) ;
-  lcd_write_str(buf) ;
+  lcd_print_str(buf) ;
 }

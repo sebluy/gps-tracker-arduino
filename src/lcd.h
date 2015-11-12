@@ -13,8 +13,8 @@
  * the display, and writing commands.
  */
  
-#ifndef NOKIA_5110_H
-#define NOKIA_5110_H
+#ifndef LCD_H
+#define LCD_H
 
 /* Arduino directive - required in header */
 #ifdef _cpluscplus
@@ -202,7 +202,7 @@ void lcd_init(void);
  * @returns    Nothing.
  *
  */
-void lcd_write_str(char *characters);
+void lcd_print_str(char *characters);
 
 /*!
  * @brief Writes a command to the LCD
