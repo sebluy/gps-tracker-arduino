@@ -13,28 +13,32 @@
 #include "waypoint_writer.h"
 #include "gps.h"
 
-#define REQ 9
-#define RDY 7
-#define RST 10
+#define REQ 9  /* Fio pin connected to Bluetooth REQ pin */
+#define RDY 7  /* Fio pin connected to Bluetooth RDY pin */
+#define RST 10 /* Fio pin connected to Bluetooth RST pin */
 
-#define WAYPOINT_DISTANCE_THRESHOLD 50 /* meters */
-#define BUSY_LED 17
+#define WAYPOINT_DISTANCE_THRESHOLD 50 /* Distance before changing waypoint to next waypoint */
+#define BUSY_LED 17                    /* Fio Pin for BUSY LED */
 
-#define GREEN_BUTTON_INTERRUPT_NUM 1 /* corresponds to pin 2 (D2) */
-#define BLUE_BUTTON_INTERRUPT_NUM 0 /* corresponds to pin 3 (D3) */
+#define GREEN_BUTTON_INTERRUPT_NUM 1  /* Corresponds to pin 2 (D2) */
+#define BLUE_BUTTON_INTERRUPT_NUM 0   /* Corresponds to pin 3 (D3) */
 
-/* Global flag indicating a button press has not yet been handled.
-   Will be set to 1 on button press, and should be read and cleared
-   atomically (disable/renable interrupts). */
+/*
+ * Global flags indicating a button press has not yet been handled.
+ *  Will be set to 1 on button press, and should be read and cleared
+ *  atomically (disable/renable interrupts).
+ */
 uint8_t g_green_button_pressed = 0;
 uint8_t g_blue_button_pressed = 0;
 
 void print_tracking_display(struct tracking_data_t *data)
 {
     lcd_pos(0, 0);
+    lcd_write_str("SP ") ;
     lcd_print_float(data->instant_speed);
 
     lcd_pos(0, 1);
+    lcd_write_str("AV ") ;
     lcd_print_float(data->average_speed);
 
     lcd_pos(0, 2);
@@ -42,12 +46,15 @@ void print_tracking_display(struct tracking_data_t *data)
     int hours = (elapsed/60/60) % 60;
     int minutes = (elapsed/60) % 60;
     int secs = elapsed % 60;
+    lcd_write_str("TE ") ;
     lcd_print_time(hours, minutes, secs);
 
     lcd_pos(0, 3);
+    lcd_write_str("DI ") ;
     lcd_print_float(data->total_distance);
 
     lcd_pos(0, 4);
+    lcd_write_str("WP ") ;
     if (data->waypoint_done) {
         lcd_write_str("Done");
     } else {
