@@ -6,12 +6,13 @@
  * @author Andrew Hayford
  * @author Sebastian Luy
  *
- * @date 28 October, 2015
+ * @date 11 November, 2015
  *
  * This file contains the necessary functions to communicate
  * with the Nokia 5110 LCD. This includes writing strings, clearing
  * the display, and writing commands.
  */
+ 
 #ifndef NOKIA_5110_H
 #define NOKIA_5110_H
 
@@ -224,12 +225,13 @@ void lcd_write_cmd(byte dc, byte data);
  *
  * Writes a floating point number d to the LCD
  *
- * @param[in]  d    Floating point value to display
+ * @param[in]  d      Floating point value to display
+ * @param[in]  numdec Number of digits after the decimal point 
  *
  * @returns    Nothing.
  *
  */
-void lcd_print_float(double d);
+void lcd_print_float(double d, int numdec);
 
 /*!
  * @brief Writes the time in hh:mm:ss to the LCD

@@ -1,1 +1,11 @@
-Copy folder(s) into sketchbook/libraries.
+This is a modified version of the Nordic Bluetooth Driver.
+
+To install:
+1)  Copy folder(s) into sketchbook/libraries.
+2)  Open the Arduino IDE and navigate to Sketch>Include Libraries
+3)  Select the Add .zip library option
+4)  Go back to your sketchbook/libraries folder and select the folder
+    nordic_bluetooth_driver
+5)  The Nordic library will now be linked. The Arduino IDE may add
+    all .h files in the folder to your current sketch, it is safe to 
+    remove all but lib_aci.h for this application

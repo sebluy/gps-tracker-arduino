@@ -35,11 +35,11 @@ void print_tracking_display(struct tracking_data_t *data)
 {
     lcd_pos(0, 0);
     lcd_write_str("SP ") ;
-    lcd_print_float(data->instant_speed);
+    lcd_print_float(data->instant_speed, 1);
 
     lcd_pos(0, 1);
     lcd_write_str("AV ") ;
-    lcd_print_float(data->average_speed);
+    lcd_print_float(data->average_speed, 1);
 
     lcd_pos(0, 2);
     int elapsed = data->time_elapsed;
@@ -51,14 +51,14 @@ void print_tracking_display(struct tracking_data_t *data)
 
     lcd_pos(0, 3);
     lcd_write_str("DI ") ;
-    lcd_print_float(data->total_distance);
+    lcd_print_float(data->total_distance, 0);
 
     lcd_pos(0, 4);
     lcd_write_str("WP ") ;
     if (data->waypoint_done) {
         lcd_write_str("Done");
     } else {
-        lcd_print_float(data->waypoint_distance);
+        lcd_print_float(data->waypoint_distance, 0);
     }
 }
 

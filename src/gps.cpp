@@ -1,5 +1,4 @@
 #include "Arduino.h"
-
 #include "gps.h"
 
 /* based off of Adafruit arduino driver

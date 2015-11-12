@@ -1,3 +1,19 @@
+/*!
+ * @file
+ *
+ * @brief Interface for the Nokia 5110 Graphic LCD
+ *
+ * @author Andrew Hayford
+ * @author Sebastian Luy
+ *
+ * @date 11 November, 2015
+ *
+ * This file contains the function definitions required to interface
+ * with the LCD. This includes initialization, printing (characters, floats,
+ * times, strings), and sending commands. 
+ * 
+ */
+
 #include "SPI.h"
 #include "Arduino.h"
 #include "nokia_5110.h"
@@ -168,15 +184,16 @@ void lcd_write_cmd(byte dc, byte data)
  *
  * Writes a floating point number d to the LCD
  *
- * @param[in]  d    Floating point value to display
+ * @param[in]  d      Floating point value to display
+ * @param[in]  numdec Number of digits after the decimal point 
  *
  * @returns    Nothing.
  *
  */
-void lcd_print_float(double d)
+void lcd_print_float(double d, int numdec)
 {
   static char buf[13] ;
-  dtostrf(d, 1, 3, buf) ;
+  dtostrf(d, 1, numdec, buf) ;
   lcd_write_str(buf) ;
 }
 
