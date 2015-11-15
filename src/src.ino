@@ -13,10 +13,6 @@
 #include "waypoint_writer.h"
 #include "gps.h"
 
-#define REQ 9  /* Fio pin connected to Bluetooth REQ pin */
-#define RDY 7  /* Fio pin connected to Bluetooth RDY pin */
-#define RST 10 /* Fio pin connected to Bluetooth RST pin */
-
 #define WAYPOINT_DISTANCE_THRESHOLD 100 /* Distance before changing waypoint to next waypoint */
 #define BUSY_LED 17                    /* Fio Pin for BUSY LED */
 
@@ -25,8 +21,8 @@
 
 /*
  * Global flags indicating a button press has not yet been handled.
- *  Will be set to 1 on button press, and should be read and cleared
- *  atomically (disable/renable interrupts).
+ * Will be set to 1 on button press, and should be read and cleared
+ * atomically (disable/renable interrupts).
  */
 uint8_t g_green_button_pressed = 0;
 uint8_t g_blue_button_pressed = 0;
