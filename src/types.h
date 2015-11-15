@@ -10,7 +10,7 @@
  *
  * This file contains structs to abstract away
  * complexity in the gps coordinates and tracking
- * 
+ *
  */
 
 #ifndef TYPES_H
@@ -37,7 +37,7 @@ struct point_t {
  * during tracking mode. This includes number of points since entering
  * tracking mode, the sum (aggregate) of the speed, the current waypoint
  * in the ordered list, and the current and previous points received
- * in tracking mode. 
+ * in tracking mode.
  *
  */
 struct tracking_record_t {
@@ -53,7 +53,7 @@ struct tracking_record_t {
  *
  * This struct stores the tracking mode data which is displayed on the LCD.
  * This includes the speeds and distances associated with tracking, along with the
- * time and a flag indicating if the waypoint path is complete. 
+ * time and a flag indicating if the waypoint path is complete.
  *
  */
 struct tracking_data_t {

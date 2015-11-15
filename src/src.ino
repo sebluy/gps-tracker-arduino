@@ -17,7 +17,7 @@
 #define RDY 7  /* Fio pin connected to Bluetooth RDY pin */
 #define RST 10 /* Fio pin connected to Bluetooth RST pin */
 
-#define WAYPOINT_DISTANCE_THRESHOLD 50 /* Distance before changing waypoint to next waypoint */
+#define WAYPOINT_DISTANCE_THRESHOLD 100 /* Distance before changing waypoint to next waypoint */
 #define BUSY_LED 17                    /* Fio Pin for BUSY LED */
 
 #define GREEN_BUTTON_INTERRUPT_NUM 1  /* Corresponds to pin 2 (D2) */

@@ -10,8 +10,8 @@
  *
  * This file contains the function definitions required to interface
  * with the LCD. This includes initialization, printing (characters, floats,
- * times, strings), and sending commands. 
- * 
+ * times, strings), and sending commands.
+ *
  */
 
 #include "SPI.h"
@@ -185,7 +185,7 @@ void lcd_write_cmd(byte dc, byte data)
  * Writes a floating point number d to the LCD
  *
  * @param[in]  d      Floating point value to display
- * @param[in]  numdec Number of digits after the decimal point 
+ * @param[in]  numdec Number of digits after the decimal point
  *
  * @returns    Nothing.
  *
@@ -193,7 +193,7 @@ void lcd_write_cmd(byte dc, byte data)
 void lcd_print_float(double d, int numdec)
 {
   static char buf[13] ; /* buffer to hold converted float */
-  
+
   /* Convert passed double to string with numdec precision */
   dtostrf(d, 1, numdec, buf) ;
   lcd_print_str(buf) ;
@@ -215,7 +215,7 @@ void lcd_print_float(double d, int numdec)
 void lcd_print_time(int hh, int mm, int ss)
 {
   char buf[13] ;  /* buffer to hold resulting string - 13 characters per line */
-  
+
   /* Write integer values to string in time format */
   sprintf(buf, "%02d:%02d:%02d", hh, mm, ss) ;
   lcd_print_str(buf) ;

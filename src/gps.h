@@ -13,8 +13,8 @@ struct gps_t {
 };
 
 struct gps_data_t {
-    point_t location;
-    float speed;
+    point_t location; /*!< (latitude, longitude) coordinate */
+    float speed; /*!< speed in mph */
 };
 
 void gps_boot(void);

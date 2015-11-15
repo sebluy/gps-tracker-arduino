@@ -3,7 +3,9 @@
 
 /* based off of Adafruit arduino driver
    https://github.com/adafruit/Adafruit-GPS-Library */
+
 #define GPSSerial Serial1
+
 #define PMTK_SET_NMEA_OUTPUT_RMCONLY "$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29"
 #define PMTK_SET_NMEA_UPDATE_1HZ "$PMTK220,1000*1F"
 
@@ -15,6 +17,8 @@
 #define LONGITUDE_OFFSET 32
 #define EW_OFFSET 43
 #define SPEED_OFFSET 45
+
+#define KNOTS_TO_MPH 1.150779
 
 static void ignore_line(void) {
     while (!GPSSerial.available() || GPSSerial.read() != '\n');
@@ -118,7 +122,7 @@ void gps_parse(gps_t *gps, gps_data_t *data)
     strncpy(buffer, speed_field, 4);
     buffer[4] = '\0';
 
-    data->speed = atof(buffer);
+    data->speed = atof(buffer)*KNOTS_TO_MPH;
 }
 
 
