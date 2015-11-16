@@ -10,6 +10,9 @@
    and
    https://github.com/adafruit/Adafruit_nRF8001/blob/master/Adafruit_BLE_UART.cpp */
 
+/* Datasheet:
+   https://www.nordicsemi.com/eng/content/download/2981/38488/file/nRF8001_PS_v1.3.pdf */
+
 /* pin definitions for bluetooth usage with fiov3 */
 #define REQ 9  /* pin 9, (D9) */
 #define RDY 7  /* pin 7, (D7) */

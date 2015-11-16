@@ -4,6 +4,15 @@
 /* based off of Adafruit arduino driver
    https://github.com/adafruit/Adafruit-GPS-Library */
 
+/* Sample nmea line
+   $GPRMC,064951.000,A,2307.1256,N,12016.4438,E,0.03,165.48,260406,3.05,W,A*2C */
+
+/* Datasheet:
+   http://www.adafruit.com/datasheets/GlobalTop-FGPMMOPA6H-Datasheet-V0A.pdf */
+
+/* Command Set Datasheet:
+   http://www.adafruit.com/datasheets/PMTK_A11.pdf */
+
 #define GPSSerial Serial1
 
 #define PMTK_SET_NMEA_OUTPUT_RMCONLY "$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29"
@@ -20,7 +29,9 @@
 
 #define KNOTS_TO_MPH 1.150779
 
+/* blocks waiting for a complete line from gps and then discards it */
 static void ignore_line(void) {
+    /* DANGEROUS */
     while (!GPSSerial.available() || GPSSerial.read() != '\n');
 }
 
@@ -32,11 +43,12 @@ static uint8_t parse_hex(char c) {
     }
 }
 
-static uint8_t checksum_good(char *nmea) {
+static boolean checksum_good(char *nmea) {
     uint8_t i = 1;
     char c = nmea[1];
     char checksum = 0;
 
+    /* checksum is computed by xor all bytes between $ and * */
     while (c != '*') {
         checksum ^= c;
         c = nmea[++i];
@@ -48,7 +60,8 @@ static uint8_t checksum_good(char *nmea) {
     return checksum == 0;
 }
 
-static uint8_t data_valid(char *nmea) {
+/* skip first two fields and ensure third equals 'A' */
+static boolean data_valid(char *nmea) {
     char *iter = nmea;
     /* field after second comma */
     iter = strchr(iter, ',');
@@ -56,15 +69,14 @@ static uint8_t data_valid(char *nmea) {
     iter = strchr(iter + 1, ',');
     if (iter == NULL) return 0;
     /* A means valid */
-    return (uint8_t)(iter[1] == 'A');
+    return iter[1] == 'A';
 }
 
-uint8_t gps_valid(gps_t *gps)
+boolean gps_valid(gps_t *gps)
 {
     return checksum_good(gps->nmea) && data_valid(gps->nmea);
 }
 
-/* parses string in nmea, filling data fields of gps data */
 void gps_parse(gps_t *gps, gps_data_t *data)
 {
     char buffer[7];
@@ -122,12 +134,10 @@ void gps_parse(gps_t *gps, gps_data_t *data)
     strncpy(buffer, speed_field, 4);
     buffer[4] = '\0';
 
+    /* convert from knots to mph */
     data->speed = atof(buffer)*KNOTS_TO_MPH;
 }
 
-
-/* returns true if valid gps nmea string is available
- * only returns true once per valid nmea string */
 uint8_t gps_available(gps_t *gps)
 {
     while (GPSSerial.available()) {
