@@ -62,7 +62,7 @@ struct tracking_data_t {
     float average_speed;       /*!< Average speed since entering tracking, in mph */
     float total_distance;      /*!< Total distance traveled since entering tracking mode, in meters */
     float waypoint_distance;   /*!< Distance to closest, non-passed waypoint in meters */
-    uint8_t waypoint_done;     /*!< Flag to indicate waypoint path is complete */
+    boolean waypoint_done;     /*!< Flag to indicate waypoint path is complete */
 };
 
 #endif

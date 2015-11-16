@@ -9,7 +9,7 @@
 #include "lcd.h"
 #include "types.h"
 #include "haversine.h"
-#include "waypoint_store.h"
+#include "waypoint_reader.h"
 #include "waypoint_writer.h"
 #include "gps.h"
 
@@ -29,14 +29,17 @@ uint8_t g_blue_button_pressed = 0;
 
 void print_tracking_display(struct tracking_data_t *data)
 {
+    /* instaneous speed */
     lcd_pos(0, 0);
     lcd_print_str("SP ") ;
     lcd_print_float(data->instant_speed, 1);
 
+    /* average speed */
     lcd_pos(0, 1);
     lcd_print_str("AV ") ;
     lcd_print_float(data->average_speed, 1);
 
+    /* time */
     lcd_pos(0, 2);
     int elapsed = data->time_elapsed;
     int hours = (elapsed/60/60) % 60;
@@ -45,10 +48,12 @@ void print_tracking_display(struct tracking_data_t *data)
     lcd_print_str("TE ") ;
     lcd_print_time(hours, minutes, secs);
 
+    /* distance */
     lcd_pos(0, 3);
     lcd_print_str("DI ") ;
     lcd_print_float(data->total_distance, 0);
 
+    /* waypoint distance */
     lcd_pos(0, 4);
     lcd_print_str("WP ") ;
     if (data->waypoint_done) {
@@ -62,6 +67,7 @@ void setup(void)
 {
     gps_boot();
 
+    /* bluetooth and lcd use SPI, so initialization must be done first */
     SPI.begin();
 
     bluetooth_t bluetooth;
@@ -125,21 +131,26 @@ void run_tracking(void)
     gps_data_t gps_data;
     gps_initialize(&gps);
 
-    waypoint_store_t waypoint_store;
-    waypoint_store_initialize(&waypoint_store);
-    point_t initial_waypoint = waypoint_store_get_next(&waypoint_store);
+    waypoint_reader_t waypoint_reader;
+    waypoint_reader_initialize(&waypoint_reader);
+    point_t initial_waypoint = waypoint_reader_get_next(&waypoint_reader);
 
-    tracking_data_t tracking_data = (tracking_data_t){0.0,0,0.0,0.0,0.0,0};
+    tracking_data_t tracking_data = (tracking_data_t){0.0,0,0.0,0.0,0.0,false};
+
     tracking_record_t tracking_record = {.num_points = 0,
                                          .aggregate_speed = 0.0,
                                          .current_waypoint = initial_waypoint};
 
-    int started = 0;
+    /* Started will be set to true after the first valid gps packet.
+       This indicates that tracking has begun.*/
+    boolean started = false;
+
     lcd_clear_display();
     lcd_print_str("Pending Fix");
 
     while (1) {
 
+        /* on green button press, finish tracking (return) */
         noInterrupts();
         if (g_green_button_pressed) {
             g_green_button_pressed = 0;
@@ -148,15 +159,16 @@ void run_tracking(void)
         }
         interrupts();
 
+        /* spin until a gps packet has arrived */
         if (gps_available(&gps)) {
 
-            digitalWrite(BUSY_LED, HIGH); /* turn on LED */
-
+            /* ignore invalid packets */
             if (gps_valid(&gps)) {
 
+                /* only clear lcd for the first gps packet after fix */
                 if (!started) {
                     lcd_clear_display();
-                    started = 1;
+                    started = true;
                 }
 
                 gps_parse(&gps, &gps_data);
@@ -165,17 +177,16 @@ void run_tracking(void)
                 update_tracking_data(&tracking_data, &gps_data, &tracking_record);
 
                 if (!tracking_data.waypoint_done) {
-                    update_waypoint(&waypoint_store, &tracking_data, &tracking_record);
+                    update_waypoint(&waypoint_reader, &tracking_data, &tracking_record);
                 }
 
             }
 
+            /* only update time and display after fix */
             if (started) {
                 print_tracking_display(&tracking_data);
                 tracking_data.time_elapsed++;
             }
-
-            digitalWrite(BUSY_LED, LOW); /* turn off LED */
         }
     }
 }
@@ -202,7 +213,7 @@ void update_tracking_data(tracking_data_t *data, gps_data_t *gps, tracking_recor
 
 /* updates tracking_data->waypoint_done, current_waypoint and
  * tracking_data->waypoint_distance */
-void update_waypoint(waypoint_store_t *waypoint_store,
+void update_waypoint(waypoint_reader_t *waypoint_reader,
                      tracking_data_t *tracking_data,
                      tracking_record_t *tracking_record)
 {
@@ -213,10 +224,10 @@ void update_waypoint(waypoint_store_t *waypoint_store,
 
     while (distance_to_waypoint < WAYPOINT_DISTANCE_THRESHOLD
            && !tracking_data->waypoint_done) {
-        if (waypoint_store_end(waypoint_store)) {
-            tracking_data->waypoint_done = 1;
+        if (waypoint_reader_end(waypoint_reader)) {
+            tracking_data->waypoint_done = true;
         } else {
-            waypoint = waypoint_store_get_next(waypoint_store);
+            waypoint = waypoint_reader_get_next(waypoint_reader);
             distance_to_waypoint = distance_between(waypoint, tracking_point);
         }
     }
@@ -226,12 +237,11 @@ void update_waypoint(waypoint_store_t *waypoint_store,
 }
 
 
-void loop(void)
-{ 
-  /* dead loop -this loop/setup is begging for globals */
-}
+/* Never called.
+   Loop is handled in setup to avoid using global variables.
+   Arduino requires this to compile. */
+void loop(void) {}
 
-/* called on button press interrupt */
 void green_button_handler(void)
 {
     /* only allow button press every 200 ms */
@@ -258,7 +268,6 @@ void run_bluetooth(bluetooth_t *bluetooth)
 {
     lcd_clear_display();
     lcd_print_str("Bluetooth");
-    //    bluetooth.setDeviceName("PETRICE"); /* 7 characters max! */
     bluetooth_advertise(bluetooth);
     get_and_store_waypoints(bluetooth);
 }
