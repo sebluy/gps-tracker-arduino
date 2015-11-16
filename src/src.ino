@@ -73,6 +73,9 @@ void setup(void)
     bluetooth_t bluetooth;
     bluetooth_setup(&bluetooth);
 
+    /* magic between bluetooth and lcd */
+    delay(1);
+
     /* Initialise LCD - Print startup message */
     lcd_init();
     lcd_clear_display();

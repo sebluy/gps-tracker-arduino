@@ -2,12 +2,14 @@
 #define WAYPOINT_READER_H
 
 #include <stdint.h>
+#include "Arduino.h"
+
 #include "types.h"
 
 /* A waypoint reader is used for reading waypoints from non-volatile storage.
    Use a waypoint writer to write waypoints to storage. */
 
-struct waypoint_store_t {
+struct waypoint_reader_t {
     uint32_t count;
     float *ptr;
 };

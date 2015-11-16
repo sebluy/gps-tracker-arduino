@@ -108,16 +108,13 @@ void lcd_pos(int x, int y)
  */
 void lcd_init(void)
 {
-  //SPI.begin();
-  //SPI.setBitOrder(MSBFIRST) ;
-
   pinMode(LCD_SCE, OUTPUT);
   pinMode(LCD_RST, OUTPUT);
   pinMode(LCD_DC, OUTPUT);
-//  pinMode(LCD_MOSI, OUTPUT);
-//  pinMode(LCD_SCLK, OUTPUT);
+
   digitalWrite(LCD_RST, LOW);
   digitalWrite(LCD_RST, HIGH);
+
   lcd_write_cmd(LOW, 0x21 );  // LCD Extended Commands.
   lcd_write_cmd(LOW, 0xB1 );  // Set LCD Vop (Contrast).
   lcd_write_cmd(LOW, 0x04 );  // Set Temp coefficent. //0x04
@@ -138,15 +135,6 @@ void lcd_init(void)
  */
 void lcd_print_str(char *str)
 {
-  unsigned int len = 0 ;
-  unsigned int cur_line_len = 0 ;
-  unsigned int line = 0 ;
-  char * pch = NULL ;
-
-  /* Find length of string */
-  len = strlen(str) ;
-
-  /* Print normally if it can fit on one line */
   while (*str) {
     lcd_write_char(*str++);
   }
@@ -168,10 +156,9 @@ void lcd_print_str(char *str)
  */
 void lcd_write_cmd(byte dc, byte data)
 {
-   digitalWrite(LCD_DC, dc);    /* Mode select */
+  digitalWrite(LCD_DC, dc);    /* Mode select */
 
   /* Write command/address/data byte */
-  //shiftOut(LCD_MOSI, LCD_SCLK, MSBFIRST, data);
   SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
   digitalWrite(LCD_SCE, LOW);  /* Chip enable active low */
   SPI.transfer(data) ;

@@ -17,6 +17,7 @@
 #define TYPES_H
 
 #include <stdint.h>
+#include "Arduino.h"
 
 /*!
  * @brief struct to hold gps point consisting of a latitude and longitude

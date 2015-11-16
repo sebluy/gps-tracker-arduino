@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <avr/eeprom.h>
+#include "Arduino.h"
 
 #include "waypoint_reader.h"
 
@@ -13,14 +14,14 @@ void waypoint_reader_initialize(waypoint_reader_t *reader)
     reader->ptr = (float*)0x4;
 }
 
-point_t waypoint_store_get_next(waypoint_store_t *store)
+point_t waypoint_reader_get_next(waypoint_reader_t *reader)
 {
-    float latitude = eeprom_read_float(store->ptr++);
-    float longitude = eeprom_read_float(store->ptr++);
+    float latitude = eeprom_read_float(reader->ptr++);
+    float longitude = eeprom_read_float(reader->ptr++);
     return (point_t){latitude, longitude};
 }
 
-boolean waypoint_store_end(waypoint_store_t *store)
+boolean waypoint_reader_end(waypoint_reader_t *reader)
 {
-    return store->ptr == (float*)(0x4 + store->count*8);
+    return reader->ptr == (float*)(0x4 + reader->count*8);
 }

@@ -31,6 +31,9 @@ static services_pipe_type_mapping_t * services_pipe_type_mapping = NULL;
 /* Store the setup for the nRF8001 in the flash of the AVR to save on RAM */
 static const hal_aci_data_t setup_msgs[NB_SETUP_MESSAGES] PROGMEM = SETUP_MESSAGES_CONTENT;
 
+/* this function must be defined for nordic bluetooth library to compile */
+void __ble_assert(const char *file, uint16_t line) {}
+
 bluetooth_status_t bluetooth_get_status(bluetooth_t *bluetooth)
 {
     return bluetooth->status;
@@ -72,7 +75,7 @@ void bluetooth_setup(bluetooth_t *bluetooth)
     /* this is not being used, but leave it for now incase it breaks things */
     aci_state->aci_pins.spi_clock_divider = SPI_CLOCK_DIV8;
 
-    aci_state->aci_pins.reset_pin              = RESET;
+    aci_state->aci_pins.reset_pin              = RST;
     aci_state->aci_pins.active_pin             = UNUSED;
 
     /* chip sel doesn't appear to be exposed on our breakout board */
@@ -87,7 +90,7 @@ void bluetooth_setup(bluetooth_t *bluetooth)
 
     /* wait for standby mode before putting device to sleep */
     /* danger zone, rewrite this to be safer */
-    while (STANDBY != bluetooth->status) {
+    while (STANDBY != bluetooth_get_status(bluetooth)) {
         bluetooth_poll(bluetooth);
     }
 
@@ -123,7 +126,7 @@ void bluetooth_sleep(bluetooth_t *bluetooth)
     if (CONNECTED == status) {
         if (lib_aci_disconnect(&bluetooth->aci_state, ACI_REASON_TERMINATE)) {
             /* DANGEROUS */
-            while (STANDBY != bluetooth_get_status(bluetooth) {
+            while (STANDBY != bluetooth_get_status(bluetooth)) {
                 bluetooth_poll(bluetooth);
             }
         }
@@ -154,6 +157,9 @@ void bluetooth_poll(bluetooth_t *bluetooth)
 
     hal_aci_evt_t aci_data;
 
+    /* i <3 magic numbers */
+    delay(5);
+
     // We enter the if statement only when there is a ACI event available to be processed
     if (lib_aci_event_get(&bluetooth->aci_state, &aci_data))
     {
@@ -166,7 +172,6 @@ void bluetooth_poll(bluetooth_t *bluetooth)
         case ACI_EVT_DEVICE_STARTED:
         {
             bluetooth->aci_state.data_credit_total = aci_evt->params.device_started.credit_available;
-            Serial.println(aci_evt->params.device_started.device_mode);
             switch(aci_evt->params.device_started.device_mode)
             {
             case ACI_DEVICE_SETUP:

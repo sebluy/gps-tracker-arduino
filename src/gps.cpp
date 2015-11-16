@@ -138,7 +138,7 @@ void gps_parse(gps_t *gps, gps_data_t *data)
     data->speed = atof(buffer)*KNOTS_TO_MPH;
 }
 
-uint8_t gps_available(gps_t *gps)
+boolean gps_available(gps_t *gps)
 {
     while (GPSSerial.available()) {
         char c = GPSSerial.read();
@@ -150,7 +150,7 @@ uint8_t gps_available(gps_t *gps)
             if (GPSSerial.available()) {
                 continue;
             } else {
-                return 1;
+                return true;
             }
         /* ignore carriage return */
         } else if (c == '\r') {
@@ -163,7 +163,7 @@ uint8_t gps_available(gps_t *gps)
             }
         }
     }
-    return 0;
+    return false;
 }
 
 void gps_initialize(gps_t *gps)
