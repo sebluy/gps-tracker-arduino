@@ -1,18 +1,18 @@
 #include <stdint.h>
 #include <avr/eeprom.h>
 
-#include "waypoint_store.h"
+#include "waypoint_reader.h"
 
-void waypoint_store_initialize(waypoint_store_t *store)
+/* See waypoint writer for details on waypoint path layout in memory */
+
+void waypoint_reader_initialize(waypoint_reader_t *reader)
 {
     /* count stored at address 0x0 */
-    store->count = eeprom_read_dword((uint32_t*)0x0);
+    reader->count = eeprom_read_dword((uint32_t*)0x0);
     /* waypoints start at address 0x4 onward */
-    store->ptr = (float*)0x4;
+    reader->ptr = (float*)0x4;
 }
 
-/* gets the next waypoint from store. store state is modified
-   so that repeated calls return successive waypoints */
 point_t waypoint_store_get_next(waypoint_store_t *store)
 {
     float latitude = eeprom_read_float(store->ptr++);
@@ -20,9 +20,7 @@ point_t waypoint_store_get_next(waypoint_store_t *store)
     return (point_t){latitude, longitude};
 }
 
-/* returns 0 if their are more waypoints in store and
-   1 otherwise */
-uint8_t waypoint_store_end(waypoint_store_t *store)
+boolean waypoint_store_end(waypoint_store_t *store)
 {
     return store->ptr == (float*)(0x4 + store->count*8);
 }

@@ -2,6 +2,7 @@
 #define WAYPOINT_WRITER_H
 
 /* A waypoint writer is used for storing waypoints in non-volatile storage.
+   Use a waypoint reader to get waypoints out of storage.
    Only one waypoint path can be stored at any given time.
    Creating a new waypoint_writer and writing to it will overwrite the previous
    waypoint path. */
