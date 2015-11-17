@@ -179,10 +179,16 @@ void lcd_write_cmd(byte dc, byte data)
  */
 void lcd_print_float(double d, int numdec)
 {
-  static char buf[13] ; /* buffer to hold converted float */
+  static char buf[LCD_LEN-3] ; /* buffer to hold converted float */
 
   /* Convert passed double to string with numdec precision */
   dtostrf(d, 1, numdec, buf) ;
+
+  /* Fill remaining of buffer with spaces to kill unwanted data */
+  for(int i = strlen(buf); i < LCD_LEN-3; i++) {
+    buf[i] = 0x20 ;
+  }
+
   lcd_print_str(buf) ;
 }
 
@@ -201,7 +207,7 @@ void lcd_print_float(double d, int numdec)
  */
 void lcd_print_time(int hh, int mm, int ss)
 {
-  char buf[13] ;  /* buffer to hold resulting string - 13 characters per line */
+  char buf[LCD_LEN-3] ;  /* buffer to hold resulting string - 10 available characters per line */
 
   /* Write integer values to string in time format */
   sprintf(buf, "%02d:%02d:%02d", hh, mm, ss) ;

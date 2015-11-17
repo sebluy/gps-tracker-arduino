@@ -30,6 +30,8 @@ extern "C" {
 #define LCD_X     84  /*! x-dimension of Nokia 5110 */
 #define LCD_Y     48  /*! y-dimension of Nokia 5110 */
 
+#define LCD_LEN   13  /*! amount of characters per line */
+
 /* Simple font in ASCII - stored in Flash */
 static const byte ASCII[][5] PROGMEM  =
 {

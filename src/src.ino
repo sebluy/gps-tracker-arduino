@@ -247,10 +247,10 @@ void loop(void) {}
 
 void green_button_handler(void)
 {
-    /* only allow button press every 200 ms */
+    /* only allow button press every 500 ms */
     static uint32_t last = 0;
     uint32_t current = millis();
-    if (current - last > 200) {
+    if (current - last > 500) {
         g_green_button_pressed = 1;
     }
     last = current;
@@ -258,10 +258,10 @@ void green_button_handler(void)
 
 void blue_button_handler(void)
 {
-    /* only allow button press every 200 ms */
+    /* only allow button press every 500 ms */
     static uint32_t last = 0;
     uint32_t current = millis();
-    if (current - last > 200) {
+    if (current - last > 500) {
         g_blue_button_pressed = 1;
     }
     last = current;

@@ -136,6 +136,13 @@ void bluetooth_sleep(bluetooth_t *bluetooth)
     lib_aci_radio_reset();
     lib_aci_sleep();
 
+    /* Delay seems to be necessary to prevent SPI bus contention with LCD.
+       Not sure why this is. Each should be performing operations inside an
+       SPI transaction avoiding this problem.
+       Should probably read up on the nordic bluetooth driver and the arduino
+       SPI driver to figure this out, but this works for now. */
+    delay(5);
+
     bluetooth->status = SLEEPING;
 }
 
@@ -156,9 +163,6 @@ void bluetooth_poll(bluetooth_t *bluetooth)
     /* still a bit fuzzy on all this, probably needs some work */
 
     hal_aci_evt_t aci_data;
-
-    /* i <3 magic numbers */
-    delay(5);
 
     // We enter the if statement only when there is a ACI event available to be processed
     if (lib_aci_event_get(&bluetooth->aci_state, &aci_data))
