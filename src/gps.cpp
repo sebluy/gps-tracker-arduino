@@ -1,25 +1,65 @@
+/*!
+ * @file
+ *
+ * @brief Interface for the Adafruit Ultimate GPS
+ *
+ * @author Andrew Hayford
+ * @author Sebastian Luy
+ *
+ * @date 11 November, 2015
+ *
+ * This file contains the routines required to interface with
+ * the Adafruit Ultimate GPS. 
+ * 
+ * Based off of the Adafruit/Arduino driver at:
+ *    https://github.com/adafruit/Adafruit-GPS-Library
+ */
+
 #include "Arduino.h"
 #include "gps.h"
 
-/* based off of Adafruit arduino driver
-   https://github.com/adafruit/Adafruit-GPS-Library */
+/* Macro to reference Serial interface as GPSSerial */
 #define GPSSerial Serial1
+
+/* Formatting packets for GPS - sets output type and update frequency */
 #define PMTK_SET_NMEA_OUTPUT_RMCONLY "$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29"
 #define PMTK_SET_NMEA_UPDATE_1HZ "$PMTK220,1000*1F"
 
+/* Wakeup and standby packets */
 #define PMTK_Q_RELEASE "$PMTK605*31"
 #define PMTK_STANDBY "$PMTK161,0*28"
 
-#define LATITUDE_OFFSET 20
+/* Index offsets into a valid NMEA buffer */
+#define LATITUDE_OFFSET 20  
 #define NS_OFFSET 30
 #define LONGITUDE_OFFSET 32
 #define EW_OFFSET 43
 #define SPEED_OFFSET 45
 
+/*!
+ * @brief Ignores a line of data from the GPS
+ *
+ * This routine simply ignores a line from the GPS. Used for ignoring
+ * redundant notifications during startup process
+ *
+ * @returns    Nothing.
+ *
+ */
 static void ignore_line(void) {
     while (!GPSSerial.available() || GPSSerial.read() != '\n');
 }
 
+/*!
+ * @brief Parses single hex character into decimal
+ *
+ * This function implements a simple algorithm to convert hexadecimal
+ * characters into decimal integers.
+ *
+ * @param[in]  c    Hexadecimal character (0-9, A-F) 
+ *
+ * @returns    Decimal equivalent of hexadecimal value
+ *
+ */
 static uint8_t parse_hex(char c) {
     if (c <= '9') {
         return c - '0';
@@ -28,6 +68,17 @@ static uint8_t parse_hex(char c) {
     }
 }
 
+/*!
+ * @brief Validates the checksum of a GPS datastring
+ *
+ * This function checks to ensure that the GPS datastring
+ * checksum is valid.
+ *
+ * @param[in]  nmea  Pointer to buffer with NMEA datastring 
+ *
+ * @returns    True (1) is checksum valid, 0 otherwise
+ *
+ */
 static uint8_t checksum_good(char *nmea) {
     uint8_t i = 1;
     char c = nmea[1];
@@ -44,6 +95,17 @@ static uint8_t checksum_good(char *nmea) {
     return checksum == 0;
 }
 
+/*!
+ * @brief Checks the validity of a GPS datastring with valid flag
+ *
+ * This function implements a simplistic algorithm to check the valid
+ * flag on a GPS datastring
+ *
+ * @param[in]  nmea    Pointer to a buffer containing a NMEA datastring 
+ *
+ * @returns    True (1) if flag is valid, 0 otherwise.
+ *
+ */
 static uint8_t data_valid(char *nmea) {
     char *iter = nmea;
     /* field after second comma */
@@ -55,12 +117,35 @@ static uint8_t data_valid(char *nmea) {
     return (uint8_t)(iter[1] == 'A');
 }
 
+/*!
+ * @brief Validates the GPS datastring checksum/valid flag
+ *
+ * This function implements error checking for receiving GPS datastrings by
+ * by validating the checksum and valid flag
+ *
+ * @param[in]  gps    Pointer to a GPS struct containing an NMEA string
+ *
+ * @returns    1 if checksum/flag is valid, 0 otherwise
+ *
+ */
 uint8_t gps_valid(gps_t *gps)
 {
     return checksum_good(gps->nmea) && data_valid(gps->nmea);
 }
 
-/* parses string in nmea, filling data fields of gps data */
+/*!
+ * @brief Parses an NMEA datastring
+ *
+ * This function parses an NMEA datastring by reading and translating the buffer 
+ * stored in the gps_t struct, and storing the results in a gps_data_t struct 
+ * for ease of use
+ *
+ * @param[in]      gps    Pointer to a GPS struct containing an NMEA string
+ * @param[in,out]  data   Pointer to a gps_data struct to store parsed data
+ *
+ * @returns    Nothing.
+ *
+ */
 void gps_parse(gps_t *gps, gps_data_t *data)
 {
     char buffer[7];
@@ -122,8 +207,17 @@ void gps_parse(gps_t *gps, gps_data_t *data)
 }
 
 
-/* returns true if valid gps nmea string is available
- * only returns true once per valid nmea string */
+/*!
+ * @brief Checks if GPS is available
+ *
+ * This function checks to see if a new, valid NMEA GPS datastring is available.
+ * Only returns true (1) once per datastring
+ *
+ * @param[in,out]  gps    Pointer to a GPS struct 
+ *
+ * @returns    1 if a new, valid gps NMEA string is available/ 0 otherwise
+ *
+ */
 uint8_t gps_available(gps_t *gps)
 {
     while (GPSSerial.available()) {
@@ -152,6 +246,18 @@ uint8_t gps_available(gps_t *gps)
     return 0;
 }
 
+/*!
+ * @brief Initialises the Adafruit Ultimate GPS
+ *
+ * This function completes the required initialisation procedures to
+ * use the Adafruit Ultimate GPS. This wakes up the GPS, sets the update
+ * frequency, and sets up the output packet format.
+ * 
+ * @param[in,out]  gps  Pointer to uninitialised GPS struct
+ *
+ * @returns    Nothing.
+ *
+ */
 void gps_initialize(gps_t *gps)
 {
     gps->index = 0;
@@ -173,11 +279,30 @@ void gps_initialize(gps_t *gps)
     ignore_line();
 }
 
+/*!
+ * @brief Puts the Adafruit Ultimate GPS in standby mode 
+ *
+ * This function sends a serial packet to put the Adafruit Ultimate GPS
+ * into standby (low power state). 
+ *
+ * @returns    Nothing.
+ *
+ */
 void gps_standby(void)
 {
     GPSSerial.println(PMTK_STANDBY);
 }
 
+/*!
+ * @brief Starts the Adafruit Ultimate GPS 
+ *
+ * This function sets up the required parameters to run the GPS. It
+ * does this by setting up the serial connection, waking up the GPS,
+ * then placing it in standby mode (as to wait until it's actually needed)
+ *
+ * @returns    Nothing.
+ *
+ */
 void gps_boot(void)
 {
     GPSSerial.begin(9600);
