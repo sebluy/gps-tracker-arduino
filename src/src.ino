@@ -296,11 +296,13 @@ void get_and_store_waypoints(bluetooth_t *bluetooth)
         bluetooth_poll(bluetooth);
         status = bluetooth_get_status(bluetooth);
 
-        if (STANDBY == status) {
+        /* make sure to check for message before standby, because bluetooth may still have
+           a message even though it has gone into standby */
+        if (bluetooth_has_message(bluetooth)) {
+            waypoint_writer_write(&waypoint_writer, bluetooth_get_message(bluetooth));
+        } else if (STANDBY == status) {
             /* device returns to standby after transaction is complete */
             return;
-        } else if (bluetooth_has_message(bluetooth)) {
-            waypoint_writer_write(&waypoint_writer, bluetooth_get_message(bluetooth));
         } else if (CONNECTED == status || ADVERTISING == status) {
             /* keep waiting for message or connection */
             continue;
