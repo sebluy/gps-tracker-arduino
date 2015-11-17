@@ -41,8 +41,8 @@ struct gps_t {
  *
  */
 struct gps_data_t {
-    point_t location;
-    float speed;
+    point_t location; /* (latitude, longitude) coordinate */
+    float speed; /* speed in mph */
 };
 
 /*!
@@ -93,7 +93,7 @@ void gps_initialize(gps_t *gps);
  * @returns    1 if a new, valid gps NMEA string is available/ 0 otherwise
  *
  */
-uint8_t gps_available(gps_t *gps);
+boolean gps_available(gps_t *gps);
 
 /*!
  * @brief Validates the GPS datastring checksum/valid flag
@@ -106,7 +106,7 @@ uint8_t gps_available(gps_t *gps);
  * @returns    1 if checksum/flag is valid, 0 otherwise
  *
  */
-uint8_t gps_valid(gps_t *gps);
+boolean gps_valid(gps_t *gps);
 
 /*!
  * @brief Parses an NMEA datastring

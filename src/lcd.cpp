@@ -10,8 +10,8 @@
  *
  * This file contains the function definitions required to interface
  * with the LCD. This includes initialization, printing (characters, floats,
- * times, strings), and sending commands. 
- * 
+ * times, strings), and sending commands.
+ *
  */
 
 #include "SPI.h"
@@ -108,16 +108,13 @@ void lcd_pos(int x, int y)
  */
 void lcd_init(void)
 {
-  //SPI.begin();
-  //SPI.setBitOrder(MSBFIRST) ;
-
   pinMode(LCD_SCE, OUTPUT);
   pinMode(LCD_RST, OUTPUT);
   pinMode(LCD_DC, OUTPUT);
-//  pinMode(LCD_MOSI, OUTPUT);
-//  pinMode(LCD_SCLK, OUTPUT);
+
   digitalWrite(LCD_RST, LOW);
   digitalWrite(LCD_RST, HIGH);
+
   lcd_write_cmd(LOW, 0x21 );  // LCD Extended Commands.
   lcd_write_cmd(LOW, 0xB1 );  // Set LCD Vop (Contrast).
   lcd_write_cmd(LOW, 0x04 );  // Set Temp coefficent. //0x04
@@ -138,15 +135,6 @@ void lcd_init(void)
  */
 void lcd_print_str(char *str)
 {
-  unsigned int len = 0 ;
-  unsigned int cur_line_len = 0 ;
-  unsigned int line = 0 ;
-  char * pch = NULL ;
-
-  /* Find length of string */
-  len = strlen(str) ;
-
-  /* Print normally if it can fit on one line */
   while (*str) {
     lcd_write_char(*str++);
   }
@@ -168,10 +156,9 @@ void lcd_print_str(char *str)
  */
 void lcd_write_cmd(byte dc, byte data)
 {
-   digitalWrite(LCD_DC, dc);    /* Mode select */
+  digitalWrite(LCD_DC, dc);    /* Mode select */
 
   /* Write command/address/data byte */
-  //shiftOut(LCD_MOSI, LCD_SCLK, MSBFIRST, data);
   SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
   digitalWrite(LCD_SCE, LOW);  /* Chip enable active low */
   SPI.transfer(data) ;
@@ -185,7 +172,7 @@ void lcd_write_cmd(byte dc, byte data)
  * Writes a floating point number d to the LCD
  *
  * @param[in]  d      Floating point value to display
- * @param[in]  numdec Number of digits after the decimal point 
+ * @param[in]  numdec Number of digits after the decimal point
  *
  * @returns    Nothing.
  *
@@ -193,15 +180,15 @@ void lcd_write_cmd(byte dc, byte data)
 void lcd_print_float(double d, int numdec)
 {
   static char buf[LCD_LEN-3] ; /* buffer to hold converted float */
-  
+
   /* Convert passed double to string with numdec precision */
   dtostrf(d, 1, numdec, buf) ;
-  
+
   /* Fill remaining of buffer with spaces to kill unwanted data */
   for(int i = strlen(buf); i < LCD_LEN-3; i++) {
     buf[i] = 0x20 ;
   }
-  
+
   lcd_print_str(buf) ;
 }
 
@@ -221,7 +208,7 @@ void lcd_print_float(double d, int numdec)
 void lcd_print_time(int hh, int mm, int ss)
 {
   char buf[LCD_LEN-3] ;  /* buffer to hold resulting string - 10 available characters per line */
-  
+
   /* Write integer values to string in time format */
   sprintf(buf, "%02d:%02d:%02d", hh, mm, ss) ;
   lcd_print_str(buf) ;

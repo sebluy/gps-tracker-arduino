@@ -10,13 +10,14 @@
  *
  * This file contains structs to abstract away
  * complexity in the gps coordinates and tracking
- * 
+ *
  */
 
 #ifndef TYPES_H
 #define TYPES_H
 
 #include <stdint.h>
+#include "Arduino.h"
 
 /*!
  * @brief struct to hold gps point consisting of a latitude and longitude
@@ -37,7 +38,7 @@ struct point_t {
  * during tracking mode. This includes number of points since entering
  * tracking mode, the sum (aggregate) of the speed, the current waypoint
  * in the ordered list, and the current and previous points received
- * in tracking mode. 
+ * in tracking mode.
  *
  */
 struct tracking_record_t {
@@ -53,7 +54,7 @@ struct tracking_record_t {
  *
  * This struct stores the tracking mode data which is displayed on the LCD.
  * This includes the speeds and distances associated with tracking, along with the
- * time and a flag indicating if the waypoint path is complete. 
+ * time and a flag indicating if the waypoint path is complete.
  *
  */
 struct tracking_data_t {
@@ -62,7 +63,7 @@ struct tracking_data_t {
     float average_speed;       /*!< Average speed since entering tracking, in mph */
     float total_distance;      /*!< Total distance traveled since entering tracking mode, in meters */
     float waypoint_distance;   /*!< Distance to closest, non-passed waypoint in meters */
-    uint8_t waypoint_done;     /*!< Flag to indicate waypoint path is complete */
+    boolean waypoint_done;     /*!< Flag to indicate waypoint path is complete */
 };
 
 #endif

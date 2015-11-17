@@ -10,7 +10,7 @@
  *
  * This file contains a C++ implementation of the Haversine formula
  * for use in calculating distance between two GPS coordinates
- * 
+ *
  */
 
 #include <math.h>
@@ -38,11 +38,13 @@ double distance_between_radians(point_t a, point_t b)
   double d, del_lat, del_lng ;
 
   /* use haversine formula */
+  /* https://en.wikipedia.org/wiki/Haversine_formula */
+
   del_lat = fabs(a.latitude - b.latitude) ;
   del_lng = fabs(a.longitude - b.longitude) ;
 
   d = 2*asin(sqrt(square(sin(del_lat/2))
-        + cos(a.longitude)*cos(b.longitude)*square(sin(del_lng/2)))) ;
+        + cos(a.latitude)*cos(b.latitude)*square(sin(del_lng/2)))) ;
 
   return d*MEAN_EARTH_RADIUS ;
 }
@@ -67,7 +69,7 @@ double degrees_to_radians(double degrees)
 /*!
  * @brief Calculates the distance between two points
  *
- * This function takes in two points a and b(values in degrees) 
+ * This function takes in two points a and b(values in degrees)
  * and calculates the distance between them.
  *
  * @param[in]  a  A point in degrees

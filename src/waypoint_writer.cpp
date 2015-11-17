@@ -1,10 +1,25 @@
-extern "C" {
 #include <avr/eeprom.h>
 #include <stdint.h>
 #include <stdlib.h>
-}
 
 #include "waypoint_writer.h"
+
+/* Waypoints are stored in EEPROM as follows:
+
+   Count is the number of (latitude, longitude) pairs.
+
+   For count = n
+
+   0x00 n (count) (4 bytes)
+   0x04 1st Waypoint Latitude (4 bytes)
+   0x08 1st Waypoint Longitude (4 bytes)
+   0x0C 2nd Waypoint Latitude (4 bytes)
+   0x10 2nd Waypoint Longitude (4 bytes)
+   ...
+   0x?? nth Waypoint Latitude (4 bytes)
+   0x?? nth Waypoint Longitude (4 bytes)
+
+*/
 
 void waypoint_writer_initialize(waypoint_writer_t *writer)
 {
@@ -12,9 +27,8 @@ void waypoint_writer_initialize(waypoint_writer_t *writer)
     writer->ptr = (float*)0x0;
 }
 
-/* Writes a waypoint field to storage. After initialization should
-   be called successively with count, lat1, lng1, lat2, lng2, ...
-   for "count" points */
+/* converts field argument to the appropriate value
+   and inserts it into the next address in EEPROM */
 void waypoint_writer_write(waypoint_writer_t *writer, char *field)
 {
     uint32_t count;
