@@ -257,7 +257,6 @@ void bluetooth_poll(bluetooth_t *bluetooth)
 
                 /* and null terminate */
                 bluetooth->uart_buffer[aci_evt->len - 2] = '\0';
-                Serial.println(bluetooth->uart_buffer);
                 bluetooth->has_message = true;
             }
             break;

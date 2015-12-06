@@ -63,6 +63,22 @@ void print_tracking_display(struct tracking_data_t *data)
     }
 }
 
+void print_home(void)
+{
+    lcd_clear_display();
+    lcd_print_str("CREAM");
+
+    /* print number of waypoints on second row */
+    lcd_pos(0, 1);
+    waypoint_reader_t waypoint_reader;
+    waypoint_reader_initialize(&waypoint_reader);
+    uint32_t count = waypoint_reader_count(&waypoint_reader);
+
+    char buffer[13];
+    sprintf(buffer, "%d WPs", count);
+    lcd_print_str(buffer);
+}
+
 void setup(void)
 {
     gps_boot();
@@ -78,8 +94,7 @@ void setup(void)
 
     /* Initialise LCD - Print startup message */
     lcd_init();
-    lcd_clear_display();
-    lcd_print_str("CREAM");
+    print_home();
 
     attachInterrupt(GREEN_BUTTON_INTERRUPT_NUM, green_button_handler, FALLING);
     attachInterrupt(BLUE_BUTTON_INTERRUPT_NUM, blue_button_handler, FALLING);
@@ -102,8 +117,7 @@ void setup(void)
             g_blue_button_pressed = 0;
             interrupts();
 
-            lcd_clear_display();
-            lcd_print_str("CREAM");
+            print_home();
         }
 
         /* blue button press in this context means enter bluetooth mode */
@@ -118,8 +132,7 @@ void setup(void)
             g_green_button_pressed = 0;
             interrupts();
 
-            lcd_clear_display();
-            lcd_print_str("CREAM");
+            print_home();
         }
 
         interrupts();

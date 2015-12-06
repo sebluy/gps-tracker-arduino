@@ -12,7 +12,7 @@
  * with the Nokia 5110 LCD. This includes writing strings, clearing
  * the display, and writing commands.
  */
- 
+
 #ifndef LCD_H
 #define LCD_H
 
@@ -228,7 +228,7 @@ void lcd_write_cmd(byte dc, byte data);
  * Writes a floating point number d to the LCD
  *
  * @param[in]  d      Floating point value to display
- * @param[in]  numdec Number of digits after the decimal point 
+ * @param[in]  numdec Number of digits after the decimal point
  *
  * @returns    Nothing.
  *

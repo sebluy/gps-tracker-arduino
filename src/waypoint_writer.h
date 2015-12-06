@@ -19,9 +19,11 @@ struct waypoint_writer_t {
 
 void waypoint_writer_initialize(waypoint_writer_t *writer);
 
-/* Writes a waypoint field to storage. After initialization, should
-   be called successively with count, lat1, lng1, lat2, lng2, ...
-   for "count" points. */
+/* Writes a waypoint field to storage.
+   After initialization, should be called successively with
+   count, lat1, lng1, lat2, lng2, ... for "count" points.
+   The path will not be "valid" until "count" points have
+   been written. */
 void waypoint_writer_write(waypoint_writer_t *writer, char *field);
 
 /* Returns true iff the number of waypoints written equals count */
