@@ -35,8 +35,11 @@ void waypoint_writer_write(waypoint_writer_t *writer, char *field)
     float latitude, longitude;
     switch (writer->field) {
     case COUNT:
+//        Serial.println(writer->field);
         count = (uint32_t)atoi(field);
+        Serial.println(count);
         eeprom_write_dword((uint32_t*)writer->ptr, count);
+        writer->count = count;
         writer->ptr++;
         writer->field = LATITUDE;
         break;
@@ -53,4 +56,11 @@ void waypoint_writer_write(waypoint_writer_t *writer, char *field)
         writer->field = LATITUDE;
         break;
     }
+    Serial.println(((uint32_t)writer->ptr - 0x4)/8);
+}
+
+/* Returns true iff the number of waypoints written equals count */
+boolean waypoint_writer_end(waypoint_writer_t *writer)
+{
+    return writer->ptr == (float*)(0x4 + writer->count*8);
 }

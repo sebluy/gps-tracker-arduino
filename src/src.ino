@@ -112,7 +112,6 @@ void setup(void)
             interrupts();
 
             run_bluetooth(&bluetooth);
-            bluetooth_sleep(&bluetooth);
 
             /* clear all green presses that occured while in bluetooth */
             noInterrupts();
@@ -271,13 +270,42 @@ void run_bluetooth(bluetooth_t *bluetooth)
 {
     lcd_clear_display();
     lcd_print_str("Bluetooth");
+
+    /* start advertising and enter recieve routine */
     bluetooth_advertise(bluetooth);
-    get_and_store_waypoints(bluetooth);
+    boolean success = get_and_store_waypoints(bluetooth);
+
+    /* sleep on completion */
+    bluetooth_sleep(bluetooth);
+
+    /* show user transfer result */
+    char *feedback = (char*)(success ? "Success" : "Failure");
+    lcd_clear_display();
+    lcd_print_str(feedback);
+
+    /* wait for user to press blue button before returning */
+    while (1) {
+        noInterrupts();
+        if (g_blue_button_pressed) {
+            g_blue_button_pressed = 0;
+            interrupts();
+            return;
+        }
+        interrupts();
+    }
 }
 
-void get_and_store_waypoints(bluetooth_t *bluetooth)
+/* Recieves a list of waypoints from the bluetooth module and 
+   stores them in non-volatile storage.
+   Returns true if a list of waypoints was
+   completely received and stored correctly.
+   Returns false otherwise.
+   This routine will block until the transfer is finished or the
+   user presses the blue button. */
+boolean get_and_store_waypoints(bluetooth_t *bluetooth)
 {
     uint8_t started = 0;
+    boolean result = false;
     bluetooth_status_t status = bluetooth_get_status(bluetooth);
     waypoint_writer_t waypoint_writer;
     waypoint_writer_initialize(&waypoint_writer);
@@ -289,7 +317,7 @@ void get_and_store_waypoints(bluetooth_t *bluetooth)
         if (g_blue_button_pressed) {
             g_blue_button_pressed = 0;
             interrupts();
-            return;
+            return false;
         }
         interrupts();
 
@@ -304,14 +332,18 @@ void get_and_store_waypoints(bluetooth_t *bluetooth)
            a message even though it has gone into standby */
         if (bluetooth_has_message(bluetooth)) {
             waypoint_writer_write(&waypoint_writer, bluetooth_get_message(bluetooth));
+            /* return success if all waypoints have been written */
+            if (waypoint_writer_end(&waypoint_writer)) {
+                result = true;
+            }
         } else if (STANDBY == status) {
             /* device returns to standby after transaction is complete */
-            return;
+            return result;
         } else if (CONNECTED == status || ADVERTISING == status) {
             /* keep waiting for message or connection */
             continue;
         } else {
-            return;
+            return result;
         }
     }
 }

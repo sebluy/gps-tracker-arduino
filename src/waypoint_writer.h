@@ -1,6 +1,8 @@
 #ifndef WAYPOINT_WRITER_H
 #define WAYPOINT_WRITER_H
 
+#include "Arduino.h"
+
 /* A waypoint writer is used for storing waypoints in non-volatile storage.
    Use a waypoint reader to get waypoints out of storage.
    Only one waypoint path can be stored at any given time.
@@ -11,6 +13,7 @@ enum waypoint_field_t {COUNT, LATITUDE, LONGITUDE};
 
 struct waypoint_writer_t {
     waypoint_field_t field;
+    uint32_t count;
     float *ptr;
 };
 
@@ -20,5 +23,8 @@ void waypoint_writer_initialize(waypoint_writer_t *writer);
    be called successively with count, lat1, lng1, lat2, lng2, ...
    for "count" points. */
 void waypoint_writer_write(waypoint_writer_t *writer, char *field);
+
+/* Returns true iff the number of waypoints written equals count */
+boolean waypoint_writer_end(waypoint_writer_t *writer);
 
 #endif
