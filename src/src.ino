@@ -296,6 +296,10 @@ void get_and_store_waypoints(bluetooth_t *bluetooth)
         bluetooth_poll(bluetooth);
         status = bluetooth_get_status(bluetooth);
 
+        /* Might disconnect before transfer is complete.
+           TODO:
+           Check count of waypoints in transfer (and validate/transaction good stuff)
+           Use bluetooth indicate instead of notify on android (may need to change services.h)
         /* make sure to check for message before standby, because bluetooth may still have
            a message even though it has gone into standby */
         if (bluetooth_has_message(bluetooth)) {
