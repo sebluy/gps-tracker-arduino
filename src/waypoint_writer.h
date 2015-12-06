@@ -10,6 +10,7 @@
    waypoint path. */
 
 enum waypoint_field_t {COUNT, LATITUDE, LONGITUDE};
+enum waypoint_writer_status_t {FAILURE, IN_PROGRESS, SUCCESS};
 
 struct waypoint_writer_t {
     waypoint_field_t field;
@@ -23,10 +24,9 @@ void waypoint_writer_initialize(waypoint_writer_t *writer);
    After initialization, should be called successively with
    count, lat1, lng1, lat2, lng2, ... for "count" points.
    The path will not be "valid" until "count" points have
-   been written. */
-void waypoint_writer_write(waypoint_writer_t *writer, char *field);
-
-/* Returns true iff the number of waypoints written equals count */
-boolean waypoint_writer_end(waypoint_writer_t *writer);
+   been written.
+   Returns the current status of the transaction. */
+waypoint_writer_status_t
+waypoint_writer_write(waypoint_writer_t *writer, char *field);
 
 #endif

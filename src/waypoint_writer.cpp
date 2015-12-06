@@ -7,11 +7,13 @@
 #define INVALID 0
 #define VALID 1
 
+#define MAX_WAYPOINTS 50
+
 /* Waypoints are stored in EEPROM as follows:
 
    Count is the number of (latitude, longitude) pairs.
 
-   For count = n where n <= 50
+   For count = n where n <= MAX_WAYPOINTS
 
    0x00 valid (1 byte)
    0x01 n (count) (1 byte)
@@ -32,13 +34,17 @@ void waypoint_writer_initialize(waypoint_writer_t *writer)
 
 /* Converts field argument to the appropriate value
    and inserts it into the next address in EEPROM. */
-void waypoint_writer_write(waypoint_writer_t *writer, char *field)
+waypoint_writer_status_t
+waypoint_writer_write(waypoint_writer_t *writer, char *field)
 {
     uint8_t count;
     float latitude, longitude;
     switch (writer->field) {
     case COUNT:
         count = (uint8_t)atoi(field);
+        if (count > MAX_WAYPOINTS) {
+            return FAILURE;
+        }
         eeprom_write_byte((uint8_t*)0x0, INVALID);
         eeprom_write_byte((uint8_t*)0x1, count);
         writer->count = count;
@@ -59,15 +65,14 @@ void waypoint_writer_write(waypoint_writer_t *writer, char *field)
         break;
     }
 
-    /* when all points have been written, set the valid byte */
+    /* return a status based on how many points have been written */
     uint8_t written = ((uint32_t)writer->ptr - 0x4)/8;
     if (written == writer->count) {
         eeprom_write_byte((uint8_t*)0x0, VALID);
+        return SUCCESS;
+    } else if (written > writer->count) {
+        return FAILURE;
+    } else {
+        return IN_PROGRESS;
     }
-}
-
-/* Returns true iff the number of waypoints written equals count */
-boolean waypoint_writer_end(waypoint_writer_t *writer)
-{
-    return writer->ptr == (float*)(0x4 + writer->count*8);
 }
