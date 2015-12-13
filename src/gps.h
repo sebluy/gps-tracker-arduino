@@ -6,7 +6,7 @@
  * @author Andrew Hayford
  * @author Sebastian Luy
  *
- * @date 11 November, 2015
+ * @date 12 December, 2015
  *
  * This file contains the data structures and function prototypes 
  * for all routines used to interface with the Adafruit Ultimate GPS.

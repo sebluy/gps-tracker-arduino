@@ -6,7 +6,7 @@
  * @author Andrew Hayford
  * @author Sebastian Luy
  *
- * @date 11 November, 2015
+ * @date 12 December, 2015
  *
  * This file contains a C++ implementation of the Haversine formula
  * for use in calculating distance between two GPS coordinates
