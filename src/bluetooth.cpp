@@ -1,3 +1,18 @@
+/*!
+ * @file
+ *
+ * @brief Interface for the Bluetooth module
+ *
+ * @author Andrew Hayford
+ * @author Sebastian Luy
+ *
+ * @date 12 December, 2015
+ *
+ * This file contains the routines required to interface with
+ * the Adafruit Bluetooth LE 3.0 Bluefruit Module.
+ * 
+ */
+
 #include <SPI.h>
 #include <lib_aci.h>
 #include <aci_setup.h>
@@ -34,11 +49,33 @@ static const hal_aci_data_t setup_msgs[NB_SETUP_MESSAGES] PROGMEM = SETUP_MESSAG
 /* this function must be defined for nordic bluetooth library to compile */
 void __ble_assert(const char *file, uint16_t line) {}
 
+/*!
+ * @brief Returns last received status
+ *
+ * Simply returns the status of the Bluetooth module
+ *
+ * @param[in]  bluetooth  Pointer to bluetooth struct
+ *
+ * @returns    Status of the Bluetooth module
+ *
+ */
 bluetooth_status_t bluetooth_get_status(bluetooth_t *bluetooth)
 {
     return bluetooth->status;
 }
 
+/*!
+ * @brief Performs setup and puts bluetooth to sleep
+ *
+ * Sets up the Bluetooth module by configuring hardware information
+ * and setting values in the bluetooth struct. Puts the device to sleep
+ * after initialization.
+ *
+ * @param[in,out]  bluetooth  Pointer to bluetooth struct to initialize
+ *
+ * @returns    Nothing.
+ *
+ */
 void bluetooth_setup(bluetooth_t *bluetooth)
 {
 
@@ -97,7 +134,17 @@ void bluetooth_setup(bluetooth_t *bluetooth)
     bluetooth_sleep(bluetooth);
 }
 
-
+/*!
+ * @brief Wakes up bluetooth and begins advertising
+ *
+ * Wakes up the Bluetooth module and sets the device to advertise
+ * at an interval of 160ms
+ *
+ * @param[in,out]  bluetooth  Pointer to bluetooth struct we want to advertise
+ *
+ * @returns    Nothing.
+ *
+ */
 void bluetooth_advertise(bluetooth_t *bluetooth)
 {
     lib_aci_wakeup();
@@ -117,6 +164,17 @@ void bluetooth_advertise(bluetooth_t *bluetooth)
     }
 }
 
+
+/*!
+ * @brief Disconnects bluetooth (if necessary) and puts it to sleep
+ *
+ * If connected, disconnects the bluetooth and puts the module to sleep
+ *
+ * @param[in,out]  bluetooth  Pointer to bluetooth struct to sleep
+ *
+ * @returns    Nothing.
+ *
+ */
 void bluetooth_sleep(bluetooth_t *bluetooth)
 {
     /* disconnect if connected.
@@ -146,18 +204,52 @@ void bluetooth_sleep(bluetooth_t *bluetooth)
     bluetooth->status = SLEEPING;
 }
 
-
+/*!
+ * @brief Checks if Bluetooth has message
+ *
+ * Returns true iff bluetooth has recieved a message 
+ * and has not read it yet
+ *
+ * @param[in]  bluetooth  Pointer to bluetooth struct
+ *
+ * @returns    True if unread message, false otherwise
+ */
 bool bluetooth_has_message(bluetooth_t *bluetooth)
 {
     return bluetooth->has_message == true;
 }
 
+/*!
+ * @brief Fetch a message over bluetooth
+ *
+ * Returns last message recieved from bluetooth.Only a 
+ * pointer is returned, so care must be taken to ensure
+ * the value is consumed before the next message is read.
+ * If bluetooth module receives a new message,and 
+ * bluetooth_poll is called, the new message will stomp 
+ * the current message. 
+ *
+ * @param[in]  bluetooth  Pointer to bluetooth struct
+ *
+ * @returns    Pointer to a message
+ */
 char *bluetooth_get_message(bluetooth_t *bluetooth)
 {
     bluetooth->has_message = false;
     return bluetooth->uart_buffer;
 }
 
+/*!
+ * @brief Updates Bluetooth statuses 
+ *
+ * Updates bluetooth status and message after
+ * bluetooth module changes state. This call must be
+ * made explicitly for any updates to occur.
+ *
+ * @param[in,out]  bluetooth  Pointer to bluetooth struct
+ *
+ * @returns    Nothing
+ */   
 void bluetooth_poll(bluetooth_t *bluetooth)
 {
     /* still a bit fuzzy on all this, probably needs some work */
